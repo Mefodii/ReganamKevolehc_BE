@@ -1,5 +1,8 @@
+from django.http import Http404
+from rest_framework.response import Response
+
 from .models import Video, Season, ImageModel
-from rest_framework import viewsets, permissions, generics
+from rest_framework import viewsets, permissions, generics, status
 from .serializers import VideoRecursiveSerializer, VideoSerializer, SeasonSerializer, ImageModelSerializer
 
 
@@ -33,3 +36,14 @@ class ImageModelViewSet(viewsets.ModelViewSet):
         permissions.AllowAny
     ]
     serializer_class = ImageModelSerializer
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            if instance.image:
+                instance.image.delete()
+            self.perform_destroy(instance)
+        except Http404:
+            pass
+        return Response(status=status.HTTP_204_NO_CONTENT)
+

@@ -1,33 +1,58 @@
 from django.http import Http404
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from .models import Video, Season, ImageModel
+from .models import Group, Video, ImageModel
 from rest_framework import viewsets, permissions, generics, status
-from .serializers import VideoRecursiveSerializer, VideoSerializer, SeasonSerializer, ImageModelSerializer
+from .serializers import VideoWriteSerializer, VideoReadSerializer, ImageModelSerializer, \
+    GroupReadSerializer, GroupWriteSerializer
+
+LIST = "list"
+RETRIEVE = "retrieve"
+CREATE = "create"
+UPDATE = "update"
+PARTIAL_UPDATE = "partial_update"
+DEFAULT = "default"
 
 
-class VideoViewSet(viewsets.ModelViewSet):
-    queryset = Video.objects.all()
+class MultiSerializerViewSet(viewsets.ModelViewSet):
+    serializers = {
+        DEFAULT: None,
+    }
+
+    def get_serializer_class(self):
+        print(self.action)
+        return self.serializers.get(self.action, self.serializers['default'])
+
+
+class GroupViewSet(MultiSerializerViewSet):
     permission_classes = [
         permissions.AllowAny
     ]
-    serializer_class = VideoSerializer
+    serializers = {
+        DEFAULT: GroupWriteSerializer,
+        LIST: GroupReadSerializer,
+        RETRIEVE: GroupReadSerializer,
+    }
+
+    def get_queryset(self):
+        video_type = self.request.query_params.get("videoType", None)
+        return Group.objects.filter_by_type(video_type)
 
 
-class VideoList(generics.ListAPIView):
-    serializer_class = VideoRecursiveSerializer
+class VideoViewSet(MultiSerializerViewSet):
+    permission_classes = [
+        permissions.AllowAny
+    ]
+    serializers = {
+        DEFAULT: VideoWriteSerializer,
+        LIST: VideoReadSerializer,
+        RETRIEVE: VideoReadSerializer,
+    }
 
     def get_queryset(self):
         video_type = self.request.query_params.get("videoType", None)
         return Video.objects.filter_by_type(video_type)
-
-
-class SeasonViewSet(viewsets.ModelViewSet):
-    queryset = Season.objects.all()
-    permission_classes = [
-        permissions.AllowAny
-    ]
-    serializer_class = SeasonSerializer
 
 
 class ImageModelViewSet(viewsets.ModelViewSet):

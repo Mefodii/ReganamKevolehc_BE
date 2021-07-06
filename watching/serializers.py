@@ -30,6 +30,10 @@ class VideoWriteSerializer(serializers.ModelSerializer):
         model = Video
         fields = '__all__'
 
+    def to_representation(self, instance):
+        serializer = VideoReadSerializer(instance)
+        return serializer.data
+
 
 class GroupReadSerializer(serializers.ModelSerializer):
     videos = VideoReadSerializer(many=True)
@@ -44,3 +48,7 @@ class GroupWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Group
         fields = '__all__'
+
+    def to_representation(self, instance):
+        serializer = GroupReadSerializer(instance)
+        return serializer.data

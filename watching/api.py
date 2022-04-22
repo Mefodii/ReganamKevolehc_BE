@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 
 from .models import Group, Video, ImageModel
 from rest_framework import viewsets, permissions, generics, status
-from .serializers import VideoWriteSerializer, VideoReadSerializer, ImageModelSerializer, \
+from .serializers import VideoWriteSerializer, VideoSerializer, ImageModelSerializer, \
     GroupReadSerializer, GroupWriteSerializer
 
 LIST = "list"
@@ -14,6 +14,8 @@ UPDATE = "update"
 PARTIAL_UPDATE = "partial_update"
 DEFAULT = "default"
 
+QPARAM_VIDEO_TYPE = "videoType"
+
 
 class MultiSerializerViewSet(viewsets.ModelViewSet):
     serializers = {
@@ -21,7 +23,7 @@ class MultiSerializerViewSet(viewsets.ModelViewSet):
     }
 
     def get_serializer_class(self):
-        return self.serializers.get(self.action, self.serializers['default'])
+        return self.serializers.get(self.action, self.serializers[DEFAULT])
 
 
 class GroupViewSet(MultiSerializerViewSet):
@@ -35,7 +37,7 @@ class GroupViewSet(MultiSerializerViewSet):
     }
 
     def get_queryset(self):
-        video_type = self.request.query_params.get("videoType", None)
+        video_type = self.request.query_params.get(QPARAM_VIDEO_TYPE, None)
         return Group.objects.filter_by_type(video_type)
 
 
@@ -44,13 +46,11 @@ class VideoViewSet(MultiSerializerViewSet):
         permissions.AllowAny
     ]
     serializers = {
-        DEFAULT: VideoWriteSerializer,
-        LIST: VideoReadSerializer,
-        RETRIEVE: VideoReadSerializer,
+        DEFAULT: VideoSerializer,
     }
 
     def get_queryset(self):
-        video_type = self.request.query_params.get("videoType", None)
+        video_type = self.request.query_params.get(QPARAM_VIDEO_TYPE, None)
         return Video.objects.filter_by_type(video_type)
 
 

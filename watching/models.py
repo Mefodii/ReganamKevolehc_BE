@@ -84,6 +84,6 @@ class Video(models.Model):
 
 
 class ImageModel(models.Model):
-    video = models.ForeignKey(Video, related_name="images", on_delete=models.CASCADE)
+    group = models.ForeignKey(Group, related_name="images", on_delete=models.CASCADE)
     image = models.ImageField(upload_to="video/image/")
 

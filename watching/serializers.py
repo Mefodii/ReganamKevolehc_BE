@@ -16,8 +16,7 @@ class ImageModelSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class VideoReadSerializer(serializers.ModelSerializer):
-    images = ImageModelSerializer(many=True)
+class VideoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Video
@@ -31,12 +30,13 @@ class VideoWriteSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def to_representation(self, instance):
-        serializer = VideoReadSerializer(instance)
+        serializer = VideoSerializer(instance)
         return serializer.data
 
 
 class GroupReadSerializer(serializers.ModelSerializer):
-    videos = VideoReadSerializer(many=True)
+    videos = VideoSerializer(many=True)
+    images = ImageModelSerializer(many=True)
 
     class Meta:
         model = Group

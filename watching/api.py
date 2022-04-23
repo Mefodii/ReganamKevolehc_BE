@@ -1,10 +1,9 @@
 from django.http import Http404
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from .models import Group, Video, ImageModel
-from rest_framework import viewsets, permissions, generics, status
-from .serializers import VideoWriteSerializer, VideoSerializer, ImageModelSerializer, \
+from rest_framework import viewsets, permissions, status
+from .serializers import VideoWriteSerializer, VideoReadSerializer, ImageModelSerializer, \
     GroupReadSerializer, GroupWriteSerializer
 
 LIST = "list"
@@ -46,7 +45,9 @@ class VideoViewSet(MultiSerializerViewSet):
         permissions.AllowAny
     ]
     serializers = {
-        DEFAULT: VideoSerializer,
+        DEFAULT: VideoWriteSerializer,
+        LIST: VideoReadSerializer,
+        RETRIEVE: VideoReadSerializer,
     }
 
     def get_queryset(self):

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Group, Video, ImageModel
+from .models import Group, Video, ImageModel, ALIAS_SEPARATOR
 
 
 class RecursiveField(serializers.ModelSerializer):
@@ -16,7 +16,7 @@ class ImageModelSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class VideoSerializer(serializers.ModelSerializer):
+class VideoReadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Video
@@ -30,24 +30,30 @@ class VideoWriteSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def to_representation(self, instance):
-        serializer = VideoSerializer(instance)
+        serializer = VideoReadSerializer(instance)
         return serializer.data
 
 
 class GroupReadSerializer(serializers.ModelSerializer):
-    videos = VideoSerializer(many=True)
+    videos = VideoReadSerializer(many=True)
     images = ImageModelSerializer(many=True)
+    aliases = serializers.ListField(source='get_aliases')
 
     class Meta:
         model = Group
-        fields = '__all__'
+        fields = ('id', 'name', 'type', 'aliases', 'check_date', 'videos', 'images')
 
 
 class GroupWriteSerializer(serializers.ModelSerializer):
+    aliases = serializers.ListField()
 
     class Meta:
         model = Group
-        fields = '__all__'
+        fields = ('id', 'name', 'aliases', 'type', 'check_date')
+
+    def update(self, instance, validated_data):
+        instance.set_alias(validated_data['aliases'])
+        return super().update(instance, validated_data)
 
     def to_representation(self, instance):
         serializer = GroupReadSerializer(instance)

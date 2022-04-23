@@ -40,7 +40,7 @@ class GroupQuerySet(models.QuerySet):
 
 class Group(models.Model):
     name = models.CharField(max_length=200)
-    # Alias name for video. Separated by string ">;<"
+    # Alias name for video. Separated by string ALIAS_SEPARATOR
     alias = models.CharField(max_length=1000, blank=True)
     type = models.CharField(max_length=50, choices=VIDEO_TYPE_CHOICES, default=VIDEO_TYPE_ANIME)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -48,6 +48,12 @@ class Group(models.Model):
     check_date = models.DateTimeField(blank=True, null=True)
 
     objects = GroupQuerySet.as_manager()
+
+    def get_aliases(self):
+        return self.alias.split(ALIAS_SEPARATOR)
+
+    def set_alias(self, aliases):
+        self.alias = ALIAS_SEPARATOR.join(aliases)
 
     def __str__(self):
         return self.name
@@ -63,7 +69,7 @@ class VideoQuerySet(models.QuerySet):
 
 class Video(models.Model):
     name = models.CharField(max_length=200)
-    # Alias name for video. Separated by string ">;<"
+    # Alias name for video. Separated by string ALIAS_SEPARATOR
     alias = models.CharField(max_length=1000, blank=True)
     year = models.IntegerField(default=1)
     type = models.CharField(max_length=50, choices=VIDEO_TYPE_CHOICES)
@@ -78,6 +84,12 @@ class Video(models.Model):
     modified_at = models.DateTimeField(auto_now=True)
 
     objects = VideoQuerySet.as_manager()
+
+    def get_aliases(self):
+        return self.alias.split(ALIAS_SEPARATOR)
+
+    def set_alias(self, aliases):
+        self.alias = ALIAS_SEPARATOR.join(aliases)
 
     def __str__(self):
         return self.name

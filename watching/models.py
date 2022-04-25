@@ -9,7 +9,7 @@ VIDEO_TYPE_SERIAL = "Serial"
 
 VIDEO_STATUS_DROPPED = "Dropped"
 VIDEO_STATUS_PLANNED = "Planned"
-VIDEO_STATUS_IGNORED= "Ignored"
+VIDEO_STATUS_IGNORED = "Ignored"
 VIDEO_STATUS_WATCHING = "Watching"
 VIDEO_STATUS_FINISHED = "Finished"
 
@@ -42,7 +42,7 @@ class Group(models.Model):
     name = models.CharField(max_length=200)
     # Alias name for video. Separated by string ALIAS_SEPARATOR
     alias = models.CharField(max_length=1000, blank=True)
-    type = models.CharField(max_length=50, choices=VIDEO_TYPE_CHOICES, default=VIDEO_TYPE_ANIME)
+    type = models.CharField(max_length=50, choices=VIDEO_TYPE_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
     check_date = models.DateTimeField(blank=True, null=True)
@@ -50,10 +50,13 @@ class Group(models.Model):
     objects = GroupQuerySet.as_manager()
 
     def get_aliases(self):
-        return self.alias.split(ALIAS_SEPARATOR)
+        if self.alias:
+            return self.alias.split(ALIAS_SEPARATOR)
+        return []
 
-    def set_alias(self, aliases):
-        self.alias = ALIAS_SEPARATOR.join(aliases)
+    @staticmethod
+    def build_alias(aliases):
+        return ALIAS_SEPARATOR.join(aliases)
 
     def __str__(self):
         return self.name
@@ -86,10 +89,13 @@ class Video(models.Model):
     objects = VideoQuerySet.as_manager()
 
     def get_aliases(self):
-        return self.alias.split(ALIAS_SEPARATOR)
+        if self.alias:
+            return self.alias.split(ALIAS_SEPARATOR)
+        return []
 
-    def set_alias(self, aliases):
-        self.alias = ALIAS_SEPARATOR.join(aliases)
+    @staticmethod
+    def build_alias(aliases):
+        return ALIAS_SEPARATOR.join(aliases)
 
     def __str__(self):
         return self.name

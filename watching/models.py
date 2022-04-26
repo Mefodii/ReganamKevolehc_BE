@@ -45,7 +45,7 @@ class Group(models.Model):
     type = models.CharField(max_length=50, choices=VIDEO_TYPE_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
-    check_date = models.DateTimeField(blank=True, null=True)
+    check_date = models.DateField(blank=True, null=True)
 
     objects = GroupQuerySet.as_manager()
 

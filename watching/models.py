@@ -46,6 +46,8 @@ class Group(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
     check_date = models.DateField(blank=True, null=True)
+    single = models.BooleanField(default=False, blank=True)
+    status = models.CharField(max_length=50, choices=VIDEO_STATUS_CHOICES, blank=True, null=True)
 
     objects = GroupQuerySet.as_manager()
 
@@ -74,9 +76,9 @@ class Video(models.Model):
     name = models.CharField(max_length=200)
     # Alias name for video. Separated by string ALIAS_SEPARATOR
     alias = models.CharField(max_length=1000, blank=True)
-    year = models.IntegerField(default=1)
+    year = models.IntegerField(null=True, blank=True)
     type = models.CharField(max_length=50, choices=VIDEO_TYPE_CHOICES)
-    status = models.CharField(max_length=50, choices=VIDEO_STATUS_CHOICES, default=VIDEO_STATUS_FINISHED)
+    status = models.CharField(max_length=50, choices=VIDEO_STATUS_CHOICES)
     order = models.IntegerField(default=1)
     episodes = models.IntegerField(default=1)
     rating = models.IntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(10)])

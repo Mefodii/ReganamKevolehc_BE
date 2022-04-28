@@ -107,3 +107,6 @@ class ImageModel(models.Model):
     group = models.ForeignKey(Group, related_name="images", on_delete=models.CASCADE)
     image = models.ImageField(upload_to="video/image/")
 
+    def __str__(self):
+        return f'{self.group.id} - {self.group.name} - {self.image.name}'
+

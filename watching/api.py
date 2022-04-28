@@ -39,6 +39,21 @@ class GroupViewSet(MultiSerializerViewSet):
         video_type = self.request.query_params.get(QPARAM_VIDEO_TYPE, None)
         return Group.objects.filter_by_type(video_type)
 
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+
+            # Delete existing image files before deleting group
+            images = instance.images.all()
+            for image_instance in images:
+                if image_instance.image:
+                    image_instance.image.delete()
+
+            self.perform_destroy(instance)
+        except Http404:
+            pass
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class VideoViewSet(MultiSerializerViewSet):
     permission_classes = [
@@ -65,6 +80,7 @@ class ImageModelViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
+            print(instance)
             if instance.image:
                 instance.image.delete()
             self.perform_destroy(instance)

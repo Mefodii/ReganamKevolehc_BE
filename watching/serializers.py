@@ -38,7 +38,7 @@ class VideoWriteSerializer(serializers.ModelSerializer):
         return attrs
 
     def to_representation(self, instance):
-        serializer = VideoReadSerializer(instance)
+        serializer = VideoReadSerializer(instance, context=self.context)
         return serializer.data
 
 
@@ -66,5 +66,5 @@ class GroupWriteSerializer(serializers.ModelSerializer):
         return attrs
 
     def to_representation(self, instance):
-        serializer = GroupReadSerializer(instance)
+        serializer = GroupReadSerializer(instance, context=self.context)
         return serializer.data

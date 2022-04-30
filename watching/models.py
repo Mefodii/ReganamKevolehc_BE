@@ -13,6 +13,9 @@ WATCHIO_STATUS_IGNORED = "Ignored"
 WATCHIO_STATUS_WATCHING = "Watching"
 WATCHIO_STATUS_FINISHED = "Finished"
 
+WATCHIO_AIR_STATUS_ONGOING = "Ongoing"
+WATCHIO_AIR_STATUS_COMPLETED = "Completed"
+
 ALIAS_SEPARATOR = ">;<"
 
 WATCHIO_TYPE_CHOICES = (
@@ -27,6 +30,11 @@ WATCHIO_STATUS_CHOICES = (
     (WATCHIO_STATUS_IGNORED, WATCHIO_STATUS_IGNORED),
     (WATCHIO_STATUS_WATCHING, WATCHIO_STATUS_WATCHING),
     (WATCHIO_STATUS_FINISHED, WATCHIO_STATUS_FINISHED),
+)
+
+WATCHIO_AIR_STATUS_CHOICES = (
+    (WATCHIO_AIR_STATUS_ONGOING, WATCHIO_AIR_STATUS_ONGOING),
+    (WATCHIO_AIR_STATUS_COMPLETED, WATCHIO_AIR_STATUS_COMPLETED),
 )
 
 
@@ -46,8 +54,13 @@ class Group(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
     check_date = models.DateField(blank=True, null=True)
+    watched_date = models.DateField(blank=True, null=True)
     single = models.BooleanField(default=False, blank=True)
     status = models.CharField(max_length=50, choices=WATCHIO_STATUS_CHOICES, blank=True, null=True)
+    airing_status = models.CharField(max_length=50, choices=WATCHIO_AIR_STATUS_CHOICES)
+    rating = models.IntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(10)],
+                                 blank=True, null=True)
+    year = models.IntegerField(null=True, blank=True)
 
     objects = GroupQuerySet.as_manager()
 
@@ -82,6 +95,7 @@ class Video(models.Model):
     order = models.IntegerField(default=1)
     episodes = models.IntegerField(default=1)
     rating = models.IntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(10)])
+    watched_date = models.DateField(blank=True, null=True)
 
     group = models.ForeignKey(Group, on_delete=models.CASCADE, null=True, related_name="videos")
 

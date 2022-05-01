@@ -1,0 +1,6 @@
+id,name,alias,type,created_at,modified_at,check_date,watched_date,single,status,airing_status,rating,year
+28,Kami no Tou,,Anime,2022-05-01 08:43:40,2022-05-01 08:43:40,2022-04-27,,0,,Completed,0,
+54,Friends,,Serial,2022-05-01 08:43:40,2022-05-01 08:43:40,2022-04-30,,0,,Completed,0,
+55,Encanto,,Movie,2022-05-01 08:43:40,2022-05-01 08:43:40,2022-04-30,,1,Finished,Completed,0,
+56,Gokushufudou,,Anime,2022-05-01 08:43:40,2022-05-01 08:43:40,2022-04-30,,0,,Ongoing,0,
+

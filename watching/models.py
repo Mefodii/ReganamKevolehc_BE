@@ -87,6 +87,7 @@ class VideoQuerySet(models.QuerySet):
 
 class Video(models.Model):
     name = models.CharField(max_length=200)
+    comment = models.CharField(max_length=200, blank=True)
     # Alias name for video. Separated by string ALIAS_SEPARATOR
     alias = models.CharField(max_length=1000, blank=True)
     year = models.IntegerField(null=True, blank=True)
@@ -94,6 +95,7 @@ class Video(models.Model):
     status = models.CharField(max_length=50, choices=WATCHIO_STATUS_CHOICES)
     order = models.IntegerField(default=1)
     episodes = models.IntegerField(default=1)
+    current_episode = models.IntegerField(default=0)
     rating = models.IntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(10)])
     watched_date = models.DateField(blank=True, null=True)
 

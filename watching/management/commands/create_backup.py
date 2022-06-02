@@ -4,7 +4,7 @@ import shutil
 from django.core.management.base import BaseCommand
 
 from watching.resources import GroupResource, VideoResource, ImageModelResource
-from utils.File import write_file
+from utils.File import write_file_utf8
 
 BACKUPS_PATH = "backups\\"
 MEDIA_PATH = 'media'
@@ -38,5 +38,5 @@ class Command(BaseCommand):
         json_file = export_name + ".json"
         csv_file = export_name + ".csv"
 
-        write_file(json_file, str(dataset.json))
-        write_file(csv_file, str(dataset.csv))
+        write_file_utf8(json_file, str(dataset.json))
+        write_file_utf8(csv_file, str(dataset.csv))

@@ -46,6 +46,10 @@ INSTALLED_APPS = [
     'corsheaders',
     'import_export',
     'watching',
+    'reading',
+    'gaming',
+    'listening',
+    'contenting',
 ]
 
 MIDDLEWARE = [

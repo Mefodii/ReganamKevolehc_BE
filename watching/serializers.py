@@ -3,12 +3,6 @@ from rest_framework import serializers
 from .models import Group, Video, ImageModel
 
 
-class RecursiveField(serializers.ModelSerializer):
-    def to_representation(self, value):
-        serializer = self.parent.parent.__class__(value, context=self.context)
-        return serializer.data
-
-
 class ImageModelSerializer(serializers.ModelSerializer):
 
     class Meta:

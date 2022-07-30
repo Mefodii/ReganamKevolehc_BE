@@ -20,7 +20,9 @@ from django.conf import settings
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('watching/', include("watching.urls"))
+    path('watching/', include("watching.urls")),
+    path('listening/', include("listening.urls")),
+    path('contenting/', include("contenting.urls")),
 ]
 
 if settings.DEBUG:

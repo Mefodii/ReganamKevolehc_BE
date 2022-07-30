@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class WatchingConfig(AppConfig):
+class CommandsConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'watching'
+    name = 'commands'

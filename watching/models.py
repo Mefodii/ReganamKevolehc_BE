@@ -58,9 +58,8 @@ class Group(models.Model):
     single = models.BooleanField(default=False, blank=True)
     status = models.CharField(max_length=50, choices=WATCHIO_STATUS_CHOICES, blank=True, null=True)
     airing_status = models.CharField(max_length=50, choices=WATCHIO_AIR_STATUS_CHOICES)
-    rating = models.IntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(10)],
-                                 blank=True, null=True)
-    year = models.IntegerField(null=True, blank=True)
+    rating = models.IntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(10)])
+    year = models.IntegerField(default=0)
 
     objects = GroupQuerySet.as_manager()
 
@@ -90,7 +89,7 @@ class Video(models.Model):
     comment = models.CharField(max_length=200, blank=True)
     # Alias name for video. Separated by string ALIAS_SEPARATOR
     alias = models.CharField(max_length=1000, blank=True)
-    year = models.IntegerField(null=True, blank=True)
+    year = models.IntegerField(default=0)
     type = models.CharField(max_length=50, choices=WATCHIO_TYPE_CHOICES)
     status = models.CharField(max_length=50, choices=WATCHIO_STATUS_CHOICES)
     order = models.IntegerField(default=1)

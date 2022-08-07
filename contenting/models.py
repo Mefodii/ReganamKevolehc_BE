@@ -83,7 +83,7 @@ class ContentItem(models.Model):
     parsed = models.BooleanField(default=False)
     download_status = models.CharField(max_length=50, choices=DOWNLOAD_STATUS_CHOICES)
     type = models.CharField(max_length=50, choices=CONTENT_ITEM_TYPE_CHOICES)
-    content_list = models.ForeignKey(ContentList, related_name="content_item", on_delete=models.CASCADE)
+    content_list = models.ForeignKey(ContentList, related_name="content_items", on_delete=models.CASCADE)
     published_at = models.DateTimeField(default=datetime(2001, 1, 1), null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -94,9 +94,9 @@ class ContentItemPart(models.Model):
     start_time = models.CharField(max_length=30)
     comment = models.CharField(max_length=500)
     status = models.CharField(max_length=50, choices=CONTENT_ITEM_PART_STATUS_CHOICES)
-    content_item = models.ForeignKey(ContentItem, related_name="content_part", on_delete=models.CASCADE)
+    content_item = models.ForeignKey(ContentItem, related_name="content_parts", on_delete=models.CASCADE)
     needs_edit = models.BooleanField(default=False)
-    track = models.ForeignKey(Track, related_name="content_part", on_delete=models.CASCADE, null=True)
+    track = models.ForeignKey(Track, related_name="content_parts", on_delete=models.CASCADE, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)

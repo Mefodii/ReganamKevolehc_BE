@@ -55,9 +55,9 @@ class Group(models.Model):
     modified_at = models.DateTimeField(auto_now=True)
     check_date = models.DateField(blank=True, null=True)
     watched_date = models.DateField(blank=True, null=True)
-    single = models.BooleanField(default=False, blank=True)
+    single = models.BooleanField(default=False)
     status = models.CharField(max_length=50, choices=WATCHIO_STATUS_CHOICES, blank=True, null=True)
-    airing_status = models.CharField(max_length=50, choices=WATCHIO_AIR_STATUS_CHOICES)
+    airing_status = models.CharField(max_length=50, choices=WATCHIO_AIR_STATUS_CHOICES, blank=True, null=True)
     rating = models.IntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(10)])
     year = models.IntegerField(default=0)
 

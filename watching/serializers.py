@@ -9,6 +9,12 @@ class ImageModelSerializer(serializers.ModelSerializer):
         model = ImageModel
         fields = '__all__'
 
+    def update(self, instance, validated_data):
+        # Delete old image file before setting new one
+        if instance.image:
+            instance.image.delete()
+        return super().update(instance, validated_data)
+
 
 class VideoReadSerializer(serializers.ModelSerializer):
     aliases = serializers.ListField(source='get_aliases')

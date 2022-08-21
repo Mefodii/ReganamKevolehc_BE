@@ -80,11 +80,10 @@ class ImageModelViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
-            print(instance)
             if instance.image:
                 instance.image.delete()
-            self.perform_destroy(instance)
         except Http404:
-            pass
-        return Response(status=status.HTTP_204_NO_CONTENT)
+            print("Failed to delete image file: ", self.get_object())
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        return super().destroy(request, *args, **kwargs)
 

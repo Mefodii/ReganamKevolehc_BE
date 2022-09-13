@@ -5,7 +5,7 @@ from django.db.models import Q
 
 from django.core.validators import MinValueValidator
 
-from contenting.util.constants import FILE_EXTENSION_MP3, FILE_EXTENSION_MP4, FILE_EXTENSION_MKV
+from contenting.content_manager.util.constants import FILE_EXTENSION_MP3, FILE_EXTENSION_MP4, FILE_EXTENSION_MKV
 from listening.models import Track
 
 CONTENT_ITEM_PART_STATUS_ADD = "ADD"

@@ -2,7 +2,7 @@ import os
 import googleapiclient.discovery
 
 from utils import File
-from ..utils.yt_datetime import compare_yt_dates
+from ..util.yt_datetime import compare_yt_dates
 
 # Disable OAuthlib's HTTPS verification when running locally.
 # *DO NOT* leave this option enabled in production.

@@ -10,6 +10,7 @@ class Artist(models.Model):
     alias = models.CharField(max_length=1000, blank=True)
     monitoring = models.BooleanField(default=False)
     check_date = models.DateTimeField(default=datetime(2001, 1, 1))
+    releasing = models.BooleanField(default=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)

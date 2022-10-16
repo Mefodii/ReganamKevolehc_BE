@@ -1,6 +1,7 @@
 from django.http import Http404
 from rest_framework.response import Response
 
+from utils.drf_functions import MultiSerializerViewSet
 from .models import Group, Video, ImageModel
 from rest_framework import viewsets, permissions, status
 from .serializers import VideoWriteSerializer, VideoReadSerializer, ImageModelSerializer, \
@@ -14,15 +15,6 @@ PARTIAL_UPDATE = "partial_update"
 DEFAULT = "default"
 
 QPARAM_VIDEO_TYPE = "videoType"
-
-
-class MultiSerializerViewSet(viewsets.ModelViewSet):
-    serializers = {
-        DEFAULT: None,
-    }
-
-    def get_serializer_class(self):
-        return self.serializers.get(self.action, self.serializers[DEFAULT])
 
 
 class GroupViewSet(MultiSerializerViewSet):
@@ -68,6 +60,18 @@ class VideoViewSet(MultiSerializerViewSet):
     def get_queryset(self):
         video_type = self.request.query_params.get(QPARAM_VIDEO_TYPE, None)
         return Video.objects.filter_by_type(video_type)
+
+    def destroy(self, request, *args, **kwargs):
+        data = {}
+        try:
+            instance = self.get_object()
+            instance.deleted()
+            self.perform_destroy(instance)
+            data = GroupReadSerializer(instance=instance.group, context=self.get_serializer_context()).data
+            response_status = status.HTTP_200_OK
+        except Http404:
+            response_status = status.HTTP_404_NOT_FOUND
+        return Response(status=response_status, data=data)
 
 
 class ImageModelViewSet(viewsets.ModelViewSet):

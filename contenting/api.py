@@ -38,3 +38,6 @@ class ContentWatcherViewSet(viewsets.ModelViewSet):
     ]
     serializer_class = ContentWatcherSerializer
 
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+

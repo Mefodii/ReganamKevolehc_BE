@@ -37,8 +37,20 @@ class VideoWriteSerializer(serializers.ModelSerializer):
         attrs['alias'] = Group.build_alias(attrs.pop('aliases'))
         return attrs
 
+    def update(self, instance, validated_data):
+        old_order = instance.order
+        new_order = validated_data["order"]
+        if old_order != new_order:
+            instance.reorder(old_order, new_order)
+        return super().update(instance, validated_data)
+
+    def create(self, validated_data):
+        instance = super().create(validated_data)
+        instance.created()
+        return instance
+
     def to_representation(self, instance):
-        serializer = VideoReadSerializer(instance, context=self.context)
+        serializer = GroupReadSerializer(instance=instance.group, context=self.context)
         return serializer.data
 
 

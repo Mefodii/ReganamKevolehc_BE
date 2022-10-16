@@ -4,6 +4,7 @@ from .models import ContentList, ContentItem, ContentItemPart, ContentWatcher
 
 
 class ContentListSerializer(serializers.ModelSerializer):
+    content_watcher = serializers.PrimaryKeyRelatedField(many=False, read_only=True)
 
     class Meta:
         model = ContentList

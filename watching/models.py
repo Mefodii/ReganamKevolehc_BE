@@ -110,12 +110,28 @@ class Video(models.Model):
             return self.alias.split(ALIAS_SEPARATOR)
         return []
 
+    def reorder(self, old_order, new_order):
+        lte = max(old_order, new_order)
+        gte = min(old_order, new_order)
+        videos = Video.objects.filter(group=self.group, order__lte=lte, order__gte=gte)\
+            .exclude(pk=self.pk).order_by('order')
+        order_mod = -1 if old_order < new_order else 1
+        for video in videos:
+            video.order = video.order + order_mod
+            video.save()
+
+    def created(self):
+        self.reorder(99999, self.order)
+
+    def deleted(self):
+        self.reorder(self.order, 99999)
+
     @staticmethod
     def build_alias(aliases):
         return ALIAS_SEPARATOR.join(aliases)
 
     def __str__(self):
-        return self.name
+        return f'{self.name} - {self.comment} - {self.order}'
 
 
 class ImageModel(models.Model):

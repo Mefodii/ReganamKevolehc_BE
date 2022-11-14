@@ -3,6 +3,8 @@ from django.db.models import Q
 
 from django.core.validators import MaxValueValidator, MinValueValidator
 
+from utils.constants import MODEL_LIST_SEPARATOR
+
 WATCHIO_TYPE_ANIME = "Anime"
 WATCHIO_TYPE_MOVIE = "Movie"
 WATCHIO_TYPE_SERIAL = "Serial"
@@ -15,8 +17,6 @@ WATCHIO_STATUS_FINISHED = "Finished"
 
 WATCHIO_AIR_STATUS_ONGOING = "Ongoing"
 WATCHIO_AIR_STATUS_COMPLETED = "Completed"
-
-ALIAS_SEPARATOR = ">;<"
 
 WATCHIO_TYPE_CHOICES = (
     (WATCHIO_TYPE_ANIME, WATCHIO_TYPE_ANIME),
@@ -48,8 +48,8 @@ class GroupQuerySet(models.QuerySet):
 
 class Group(models.Model):
     name = models.CharField(max_length=200)
-    # Alias name for video. Separated by string ALIAS_SEPARATOR
-    alias = models.CharField(max_length=1000, blank=True)
+    alias = models.CharField(max_length=1000, blank=True)  # with MODEL_LIST_SEPARATOR
+    links_arr = models.CharField(max_length=3000, blank=True)  # with MODEL_LIST_SEPARATOR
     type = models.CharField(max_length=50, choices=WATCHIO_TYPE_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
@@ -65,12 +65,21 @@ class Group(models.Model):
 
     def get_aliases(self):
         if self.alias:
-            return self.alias.split(ALIAS_SEPARATOR)
+            return self.alias.split(MODEL_LIST_SEPARATOR)
+        return []
+
+    def get_links(self):
+        if self.links_arr:
+            return self.links_arr.split(MODEL_LIST_SEPARATOR)
         return []
 
     @staticmethod
     def build_alias(aliases):
-        return ALIAS_SEPARATOR.join(aliases)
+        return MODEL_LIST_SEPARATOR.join(aliases)
+
+    @staticmethod
+    def build_links(links):
+        return MODEL_LIST_SEPARATOR.join(links)
 
     def __str__(self):
         return self.name
@@ -87,8 +96,8 @@ class VideoQuerySet(models.QuerySet):
 class Video(models.Model):
     name = models.CharField(max_length=200)
     comment = models.CharField(max_length=200, blank=True)
-    # Alias name for video. Separated by string ALIAS_SEPARATOR
-    alias = models.CharField(max_length=1000, blank=True)
+    alias = models.CharField(max_length=1000, blank=True)  # with MODEL_LIST_SEPARATOR
+    links_arr = models.CharField(max_length=3000, blank=True)  # with MODEL_LIST_SEPARATOR
     year = models.IntegerField(default=0)
     type = models.CharField(max_length=50, choices=WATCHIO_TYPE_CHOICES)
     status = models.CharField(max_length=50, choices=WATCHIO_STATUS_CHOICES)
@@ -107,7 +116,12 @@ class Video(models.Model):
 
     def get_aliases(self):
         if self.alias:
-            return self.alias.split(ALIAS_SEPARATOR)
+            return self.alias.split(MODEL_LIST_SEPARATOR)
+        return []
+
+    def get_links(self):
+        if self.links_arr:
+            return self.links_arr.split(MODEL_LIST_SEPARATOR)
         return []
 
     def reorder(self, old_order, new_order):
@@ -128,7 +142,11 @@ class Video(models.Model):
 
     @staticmethod
     def build_alias(aliases):
-        return ALIAS_SEPARATOR.join(aliases)
+        return MODEL_LIST_SEPARATOR.join(aliases)
+
+    @staticmethod
+    def build_links(links):
+        return MODEL_LIST_SEPARATOR.join(links)
 
     def __str__(self):
         return f'{self.name} - {self.comment} - {self.order}'

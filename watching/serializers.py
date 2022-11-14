@@ -18,23 +18,32 @@ class ImageModelSerializer(serializers.ModelSerializer):
 
 class VideoReadSerializer(serializers.ModelSerializer):
     aliases = serializers.ListField(source='get_aliases')
+    links = serializers.ListField(source='get_links')
 
     class Meta:
         model = Video
         fields = '__all__'
-        extra_kwargs = {'alias': {'write_only': True}}
+        extra_kwargs = {
+            'alias': {'write_only': True},
+            'links_arr': {'write_only': True},
+        }
 
 
 class VideoWriteSerializer(serializers.ModelSerializer):
     aliases = serializers.ListField()
+    links = serializers.ListField()
 
     class Meta:
         model = Video
         fields = '__all__'
-        extra_kwargs = {'alias': {'read_only': True}}
+        extra_kwargs = {
+            'alias': {'read_only': True},
+            'links_arr': {'read_only': True},
+        }
 
     def validate(self, attrs):
         attrs['alias'] = Group.build_alias(attrs.pop('aliases'))
+        attrs['links_arr'] = Group.build_links(attrs.pop('links'))
         return attrs
 
     def update(self, instance, validated_data):
@@ -58,23 +67,32 @@ class GroupReadSerializer(serializers.ModelSerializer):
     videos = VideoReadSerializer(many=True)
     images = ImageModelSerializer(many=True)
     aliases = serializers.ListField(source='get_aliases')
+    links = serializers.ListField(source='get_links')
 
     class Meta:
         model = Group
         fields = '__all__'
-        extra_kwargs = {'alias': {'write_only': True}}
+        extra_kwargs = {
+            'alias': {'write_only': True},
+            'links_arr': {'write_only': True},
+        }
 
 
 class GroupWriteSerializer(serializers.ModelSerializer):
     aliases = serializers.ListField()
+    links = serializers.ListField()
 
     class Meta:
         model = Group
         fields = '__all__'
-        extra_kwargs = {'alias': {'read_only': True}}
+        extra_kwargs = {
+            'alias': {'read_only': True},
+            'links_arr': {'read_only': True},
+        }
 
     def validate(self, attrs):
         attrs['alias'] = Group.build_alias(attrs.pop('aliases'))
+        attrs['links_arr'] = Group.build_links(attrs.pop('links'))
         return attrs
 
     def to_representation(self, instance):

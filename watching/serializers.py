@@ -46,25 +46,24 @@ class VideoWriteSerializer(serializers.ModelSerializer):
         attrs['links_arr'] = Group.build_links(attrs.pop('links'))
         return attrs
 
-    def update(self, instance, validated_data):
+    def update(self, instance: Video, validated_data):
         old_order = instance.order
-        new_order = validated_data["order"]
-        if old_order != new_order:
-            instance.reorder(old_order, new_order)
-        return super().update(instance, validated_data)
+        res = super().update(instance, validated_data)
+        instance.updated(old_order)
+        return res
 
     def create(self, validated_data):
-        instance = super().create(validated_data)
+        instance: Video = super().create(validated_data)
         instance.created()
         return instance
 
     def to_representation(self, instance):
-        serializer = GroupReadSerializer(instance=instance.group, context=self.context)
+        serializer = VideoReadSerializer(instance=instance, context=self.context)
         return serializer.data
 
 
 class GroupReadSerializer(serializers.ModelSerializer):
-    videos = VideoReadSerializer(many=True)
+    videos = serializers.SerializerMethodField()
     images = ImageModelSerializer(many=True)
     aliases = serializers.ListField(source='get_aliases')
     links = serializers.ListField(source='get_links')
@@ -76,6 +75,11 @@ class GroupReadSerializer(serializers.ModelSerializer):
             'alias': {'write_only': True},
             'links_arr': {'write_only': True},
         }
+
+    @staticmethod
+    def get_videos(instance):
+        videos = instance.videos.all().order_by('order')
+        return VideoReadSerializer(videos, many=True).data
 
 
 class GroupWriteSerializer(serializers.ModelSerializer):

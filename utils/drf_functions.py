@@ -1,6 +1,6 @@
 from rest_framework import viewsets, serializers
 
-from utils.constants import DEFAULT
+from utils.constants import RequestType
 
 
 class RecursiveField(serializers.ModelSerializer):
@@ -11,8 +11,8 @@ class RecursiveField(serializers.ModelSerializer):
 
 class MultiSerializerViewSet(viewsets.ModelViewSet):
     serializers = {
-        DEFAULT: None,
+        RequestType.DEFAULT.value: None,
     }
 
     def get_serializer_class(self):
-        return self.serializers.get(self.action, self.serializers[DEFAULT])
+        return self.serializers.get(self.action, self.serializers[RequestType.DEFAULT.value])

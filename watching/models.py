@@ -4,41 +4,44 @@ from django.db.models import Q
 from django.core.validators import MaxValueValidator, MinValueValidator
 
 from utils.constants import MODEL_LIST_SEPARATOR
+from utils.model_functions import reorder
 
-WATCHIO_TYPE_ANIME = "Anime"
-WATCHIO_TYPE_MOVIE = "Movie"
-WATCHIO_TYPE_SERIAL = "Serial"
+WATCHING_TYPE_ANIME = "Anime"
+WATCHING_TYPE_MOVIE = "Movie"
+WATCHING_TYPE_SERIAL = "Serial"
 
-WATCHIO_STATUS_DROPPED = "Dropped"
-WATCHIO_STATUS_PLANNED = "Planned"
-WATCHIO_STATUS_IGNORED = "Ignored"
-WATCHIO_STATUS_WATCHING = "Watching"
-WATCHIO_STATUS_FINISHED = "Finished"
+WATCHING_STATUS_DROPPED = "Dropped"
+WATCHING_STATUS_PLANNED = "Planned"
+WATCHING_STATUS_IGNORED = "Ignored"
+WATCHING_STATUS_PREMIERE = "Premiere"
+WATCHING_STATUS_WATCHING = "Watching"
+WATCHING_STATUS_FINISHED = "Finished"
 
-WATCHIO_AIR_STATUS_ONGOING = "Ongoing"
-WATCHIO_AIR_STATUS_COMPLETED = "Completed"
+WATCHING_AIR_STATUS_ONGOING = "Ongoing"
+WATCHING_AIR_STATUS_COMPLETED = "Completed"
 
-WATCHIO_TYPE_CHOICES = (
-    (WATCHIO_TYPE_ANIME, WATCHIO_TYPE_ANIME),
-    (WATCHIO_TYPE_MOVIE, WATCHIO_TYPE_MOVIE),
-    (WATCHIO_TYPE_SERIAL, WATCHIO_TYPE_SERIAL),
+WATCHING_TYPE_CHOICES = (
+    (WATCHING_TYPE_ANIME, WATCHING_TYPE_ANIME),
+    (WATCHING_TYPE_MOVIE, WATCHING_TYPE_MOVIE),
+    (WATCHING_TYPE_SERIAL, WATCHING_TYPE_SERIAL),
 )
 
-WATCHIO_STATUS_CHOICES = (
-    (WATCHIO_STATUS_DROPPED, WATCHIO_STATUS_DROPPED),
-    (WATCHIO_STATUS_PLANNED, WATCHIO_STATUS_PLANNED),
-    (WATCHIO_STATUS_IGNORED, WATCHIO_STATUS_IGNORED),
-    (WATCHIO_STATUS_WATCHING, WATCHIO_STATUS_WATCHING),
-    (WATCHIO_STATUS_FINISHED, WATCHIO_STATUS_FINISHED),
+WATCHING_STATUS_CHOICES = (
+    (WATCHING_STATUS_DROPPED, WATCHING_STATUS_DROPPED),
+    (WATCHING_STATUS_PLANNED, WATCHING_STATUS_PLANNED),
+    (WATCHING_STATUS_IGNORED, WATCHING_STATUS_IGNORED),
+    (WATCHING_STATUS_PREMIERE, WATCHING_STATUS_PREMIERE),
+    (WATCHING_STATUS_WATCHING, WATCHING_STATUS_WATCHING),
+    (WATCHING_STATUS_FINISHED, WATCHING_STATUS_FINISHED),
 )
 
-WATCHIO_AIR_STATUS_CHOICES = (
-    (WATCHIO_AIR_STATUS_ONGOING, WATCHIO_AIR_STATUS_ONGOING),
-    (WATCHIO_AIR_STATUS_COMPLETED, WATCHIO_AIR_STATUS_COMPLETED),
+WATCHING_AIR_STATUS_CHOICES = (
+    (WATCHING_AIR_STATUS_ONGOING, WATCHING_AIR_STATUS_ONGOING),
+    (WATCHING_AIR_STATUS_COMPLETED, WATCHING_AIR_STATUS_COMPLETED),
 )
 
 
-class GroupQuerySet(models.QuerySet):
+class GroupManager(models.Manager):
     def filter_by_type(self, video_type):
         if video_type is None:
             return self
@@ -50,18 +53,19 @@ class Group(models.Model):
     name = models.CharField(max_length=200)
     alias = models.CharField(max_length=1000, blank=True)  # with MODEL_LIST_SEPARATOR
     links_arr = models.CharField(max_length=3000, blank=True)  # with MODEL_LIST_SEPARATOR
-    type = models.CharField(max_length=50, choices=WATCHIO_TYPE_CHOICES)
+    type = models.CharField(max_length=50, choices=WATCHING_TYPE_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
     check_date = models.DateField(blank=True, null=True)
     watched_date = models.DateField(blank=True, null=True)
     single = models.BooleanField(default=False)
-    status = models.CharField(max_length=50, choices=WATCHIO_STATUS_CHOICES, blank=True, null=True)
-    airing_status = models.CharField(max_length=50, choices=WATCHIO_AIR_STATUS_CHOICES, blank=True, null=True)
-    rating = models.IntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(10)])
-    year = models.IntegerField(default=0)
+    status = models.CharField(max_length=50, choices=WATCHING_STATUS_CHOICES, blank=True, null=True)
+    airing_status = models.CharField(max_length=50, choices=WATCHING_AIR_STATUS_CHOICES, blank=True, null=True)
+    rating = models.IntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(10)],
+                                 blank=True, null=True)
+    year = models.IntegerField(default=0, blank=True, null=True)
 
-    objects = GroupQuerySet.as_manager()
+    objects = GroupManager()
 
     def get_aliases(self):
         if self.alias:
@@ -85,12 +89,12 @@ class Group(models.Model):
         return self.name
 
 
-class VideoQuerySet(models.QuerySet):
-    def filter_by_type(self, video_type):
-        if video_type is None:
+class VideoManager(models.Manager):
+    def filter_by_group(self, group_id: int):
+        if group_id is None:
             return self
 
-        return self.filter(Q(type=video_type))
+        return self.filter(Q(group__pk=group_id))
 
 
 class Video(models.Model):
@@ -99,8 +103,8 @@ class Video(models.Model):
     alias = models.CharField(max_length=1000, blank=True)  # with MODEL_LIST_SEPARATOR
     links_arr = models.CharField(max_length=3000, blank=True)  # with MODEL_LIST_SEPARATOR
     year = models.IntegerField(default=0)
-    type = models.CharField(max_length=50, choices=WATCHIO_TYPE_CHOICES)
-    status = models.CharField(max_length=50, choices=WATCHIO_STATUS_CHOICES)
+    type = models.CharField(max_length=50, choices=WATCHING_TYPE_CHOICES)
+    status = models.CharField(max_length=50, choices=WATCHING_STATUS_CHOICES)
     order = models.IntegerField(default=1)
     episodes = models.IntegerField(default=1)
     current_episode = models.IntegerField(default=0)
@@ -112,7 +116,7 @@ class Video(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
 
-    objects = VideoQuerySet.as_manager()
+    objects = VideoManager()
 
     def get_aliases(self):
         if self.alias:
@@ -125,20 +129,19 @@ class Video(models.Model):
         return []
 
     def reorder(self, old_order, new_order):
-        lte = max(old_order, new_order)
-        gte = min(old_order, new_order)
-        videos = Video.objects.filter(group=self.group, order__lte=lte, order__gte=gte)\
-            .exclude(pk=self.pk).order_by('order')
-        order_mod = -1 if old_order < new_order else 1
-        for video in videos:
-            video.order = video.order + order_mod
-            video.save()
+        reorder(self, old_order, new_order, "order", "group")
+
+    def updated(self, old_order):
+        if self.order != old_order:
+            self.reorder(old_order, self.order)
 
     def created(self):
-        self.reorder(99999, self.order)
+        # Shift up by 1 all videos with order >= self.order
+        self.reorder(None, self.order)
 
     def deleted(self):
-        self.reorder(self.order, 99999)
+        # Shift up by -1 all videos with order >= self.order
+        self.reorder(self.order, None)
 
     @staticmethod
     def build_alias(aliases):
@@ -158,4 +161,3 @@ class ImageModel(models.Model):
 
     def __str__(self):
         return f'{self.group.id} - {self.group.name} - {self.image.name}'
-

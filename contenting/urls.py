@@ -1,17 +1,14 @@
-from django.urls import path
-
 from rest_framework import routers
-from .api import ContentListViewSet, ContentItemViewSet, ContentItemPartViewSet, ContentWatcherViewSet
-from .views import get_info
+from .api import ContentListViewSet, ContentItemViewSet, ContentTrackViewSet, ContentWatcherViewSet, \
+    ContentMusicItemViewSet
 
 router = routers.DefaultRouter()
 router.register("api/contentLists", ContentListViewSet, "contentLists")
 router.register("api/contentItems", ContentItemViewSet, "contentItems")
-router.register("api/contentItemParts", ContentItemPartViewSet, "contentItemParts")
+router.register("api/contentMusicItems", ContentMusicItemViewSet, "contentMusicItems")
+router.register("api/contentTracks", ContentTrackViewSet, "contentTracks")
 router.register("api/contentWatchers", ContentWatcherViewSet, "contentWatchers")
 
-urlpatterns = [
-    path("api/info/", get_info),
-]
+urlpatterns = []
 
 urlpatterns += router.urls

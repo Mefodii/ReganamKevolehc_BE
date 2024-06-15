@@ -1,6 +1,6 @@
-from .models import Artist, Album, Track
+from .models import Artist, Release, Track
 from rest_framework import viewsets, permissions
-from .serializers import ArtistSerializer, AlbumSerializer, TrackSerializer
+from .serializers import ArtistSerializer, ReleaseSerializer, TrackSerializer
 
 
 class ArtistViewSet(viewsets.ModelViewSet):
@@ -11,12 +11,12 @@ class ArtistViewSet(viewsets.ModelViewSet):
     serializer_class = ArtistSerializer
 
 
-class AlbumViewSet(viewsets.ModelViewSet):
-    queryset = Album.objects.all()
+class ReleaseViewSet(viewsets.ModelViewSet):
+    queryset = Release.objects.all()
     permission_classes = [
         permissions.AllowAny
     ]
-    serializer_class = AlbumSerializer
+    serializer_class = ReleaseSerializer
 
 
 class TrackViewSet(viewsets.ModelViewSet):

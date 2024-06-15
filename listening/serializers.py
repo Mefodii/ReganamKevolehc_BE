@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Artist, Album, Track
+from .models import Artist, Release, Track
 
 
 class ArtistSerializer(serializers.ModelSerializer):
@@ -9,9 +9,9 @@ class ArtistSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class AlbumSerializer(serializers.ModelSerializer):
+class ReleaseSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Album
+        model = Release
         fields = '__all__'
 
 

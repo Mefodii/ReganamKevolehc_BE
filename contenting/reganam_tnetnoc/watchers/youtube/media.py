@@ -4,8 +4,8 @@ from unicodedata import normalize
 
 from constants.constants import DEFAULT_YOUTUBE_WATCH
 from contenting.reganam_tnetnoc.model.file_extension import FileExtension
-from contenting.reganam_tnetnoc.utils.yt_datetime import compare_yt_dates
 from utils import file
+from utils.datetime_utils import compare_yt_dates
 from utils.string_utils import replace_unicode_chars, normalize_file_name
 
 

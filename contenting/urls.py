@@ -1,4 +1,5 @@
 from rest_framework import routers
+
 from .api import ContentListViewSet, ContentItemViewSet, ContentTrackViewSet, ContentWatcherViewSet, \
     ContentMusicItemViewSet
 

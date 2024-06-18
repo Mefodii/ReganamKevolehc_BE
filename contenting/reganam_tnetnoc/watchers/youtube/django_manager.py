@@ -8,11 +8,10 @@ from constants.model_choices import CONTENT_WATCHER_STATUS_RUNNING, DOWNLOAD_STA
     DOWNLOAD_STATUS_DOWNLOADED, DOWNLOAD_STATUS_UNABLE
 from contenting.models import ContentWatcher, ContentItem, ContentMusicItem
 from contenting.reganam_tnetnoc.model.file_extension import FileExtension
-from contenting.reganam_tnetnoc.utils import yt_datetime
 from contenting.reganam_tnetnoc.utils.downloader import YoutubeDownloader
 from contenting.reganam_tnetnoc.watchers.youtube.api import YoutubeWorker, YoutubeAPIItem
 from contenting.reganam_tnetnoc.watchers.youtube.queue import YoutubeQueue
-from utils import file
+from utils import datetime_utils, file
 from utils.string_utils import normalize_file_name
 
 
@@ -82,11 +81,11 @@ class YoutubeWatcherDjangoManager:
         ...
 
     def check_for_updates(self) -> None:
-        self.log(f'{str(yt_datetime.get_current_ytdate())}. '
+        self.log(f'{str(datetime_utils.get_utcnow())}. '
                  f'Checking: {self.watcher.watcher_id} - {self.watcher.name}', True)
 
-        check_date = yt_datetime.py_to_yt(self.watcher.check_date)
-        self.new_check_date = yt_datetime.get_current_ytdate()
+        check_date = datetime_utils.py_to_yt(self.watcher.check_date)
+        self.new_check_date = datetime_utils.get_utcnow()
         api_videos = self.api.get_uploads(self.watcher.watcher_id, check_date)
 
         self.log(f"{self.watcher.name.ljust(30)} || New uploads - {len(api_videos)}", True)
@@ -130,7 +129,7 @@ class YoutubeWatcherDjangoManager:
         content_item.file_name = None
         content_item.position = position
         content_item.download_status = DOWNLOAD_STATUS_NONE
-        content_item.published_at = yt_datetime.yt_to_py(yt_api_item.get_publish_date())
+        content_item.published_at = datetime_utils.yt_to_py(yt_api_item.get_publish_date())
         content_item.content_list = self.watcher.content_list
 
         if self.watcher.download:

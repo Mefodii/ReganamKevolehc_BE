@@ -8,15 +8,15 @@ from constants.paths import WATCHERS_DOWNLOAD_PATH, FILES_AUDIO_ARCHIVE_PATH, \
     FILES_VIDEO_ARCHIVE_PATH
 from contenting.reganam_tnetnoc.model.file_tags import FileTags
 from contenting.reganam_tnetnoc.model.playlist_item import PlaylistItem, PlaylistItemList
-from contenting.reganam_tnetnoc.utils import yt_datetime, media_utils
+from contenting.reganam_tnetnoc.utils import media_utils
 from contenting.reganam_tnetnoc.utils.downloader import YoutubeDownloader
-from contenting.reganam_tnetnoc.utils.ffmpeg import Ffmpeg
-from contenting.reganam_tnetnoc.utils.yt_datetime import compare_yt_dates
 from contenting.reganam_tnetnoc.watchers.youtube.api import YoutubeWorker
 from contenting.reganam_tnetnoc.watchers.youtube.media import YoutubeVideo
 from contenting.reganam_tnetnoc.watchers.youtube.queue import YoutubeQueue
 from contenting.reganam_tnetnoc.watchers.youtube.watcher import YoutubeWatcher
 from utils import file
+from utils.datetime_utils import compare_yt_dates, get_utcnow, get_default_utc
+from utils.ffmpeg import Ffmpeg
 
 
 class YoutubeWatchersManager:
@@ -51,7 +51,7 @@ class YoutubeWatchersManager:
         self.finish()
 
     def run_integrity(self):
-        self.log(str(yt_datetime.get_current_ytdate()) + " - starting to check for missing videos", True)
+        self.log(str(get_utcnow()) + " - starting to check for missing videos", True)
         self.extract_all_api_videos()
         self.generate_queue()
         self.download_queue()
@@ -86,10 +86,10 @@ class YoutubeWatchersManager:
         self.append_tags()
 
     def check_for_updates(self) -> None:
-        self.log(str(yt_datetime.get_current_ytdate()) + " - starting update process for watchers")
+        self.log(str(get_utcnow()) + " - starting update process for watchers")
         for watcher in self.watchers:
             self.log(f'Checking: {watcher.channel_id} - {watcher.name}', True)
-            watcher.new_check_date = yt_datetime.get_current_ytdate()
+            watcher.new_check_date = get_utcnow()
             api_videos = self.api.get_uploads(watcher.channel_id, watcher.check_date)
 
             self.log(f"{watcher.name.ljust(30)} || New uploads - {len(api_videos)}", True)
@@ -107,7 +107,8 @@ class YoutubeWatchersManager:
     def extract_all_api_videos(self):
         for watcher in self.watchers:
             watcher.new_check_date = watcher.check_date
-            api_videos = self.api.get_uploads(watcher.channel_id, yt_datetime.get_default_ytdate(), watcher.check_date)
+            api_videos = self.api.get_uploads(watcher.channel_id, get_default_utc(),
+                                              watcher.check_date)
             watcher.api_videos = api_videos
             watcher.extract_missing()
             watcher.extract_changed()

@@ -6,8 +6,8 @@ from typing import Tuple
 import googleapiclient.discovery
 
 from constants.constants import DEFAULT_YOUTUBE_WATCH
-from contenting.reganam_tnetnoc.utils.yt_datetime import compare_yt_dates, yt_hours_diff
 from utils import file
+from utils.datetime_utils import compare_yt_dates, yt_hours_diff
 from utils.string_utils import replace_chars_variations
 
 # Disable OAuthlib's HTTPS verification when running locally.
@@ -50,6 +50,7 @@ class YoutubeAPIVideoItem:
         self.replace_title()
 
     def get_id(self): return self.data["id"]
+
     def get_title(self): return self.data.get("snippet").get("title")
 
     def set_title(self, new_title: str): self.data["snippet"]["title"] = new_title

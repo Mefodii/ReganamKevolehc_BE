@@ -1,4 +1,5 @@
 import re
+
 from constants.constants import NON_PARSED_CHARS, RESTRICTED_CHARS, DEFAULT_REPLACE_CHAR, CHARS_VARIATIONS
 
 

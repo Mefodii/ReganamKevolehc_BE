@@ -4,9 +4,9 @@ import yt_dlp as youtube_dl
 
 from constants.constants import ALLOWED_VIDEO_QUALITY
 from contenting.reganam_tnetnoc.model.file_extension import FileExtension
-from contenting.reganam_tnetnoc.utils.ffmpeg import Ffmpeg
 from contenting.reganam_tnetnoc.watchers.youtube.queue import YoutubeQueue
 from utils import file
+from utils.ffmpeg import Ffmpeg
 
 EXT_TAG = ".%(ext)s"
 

@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
-from dateutil import parser
 
-import pytz
+from dateutil import parser
 
 
 def yt_to_py(yt_datetime: str) -> datetime:
@@ -64,13 +63,13 @@ def yt_hours_diff(d1, d2) -> float:
 
 def py_to_yt(py_datetime) -> str:
     s = py_datetime.strftime('%Y-%m-%dT%H:%M:%S.%f')
-    return s[:-3]+"Z"
+    return s[:-3] + "Z"
 
 
-def get_default_ytdate() -> str:
+def get_default_utc() -> str:
     t = datetime(1970, 1, 1)
     return py_to_yt(t)
 
 
-def get_current_ytdate() -> str:
+def get_utcnow() -> str:
     return py_to_yt(datetime.utcnow())

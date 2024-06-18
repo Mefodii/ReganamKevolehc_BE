@@ -1,6 +1,6 @@
 from django.urls import path
-
 from rest_framework import routers
+
 from .api import VideoViewSet, ImageModelViewSet, GroupViewSet
 from .views import get_info
 

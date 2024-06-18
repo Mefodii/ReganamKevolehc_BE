@@ -1,4 +1,5 @@
 from django.http import JsonResponse
+
 from .models import WATCHING_STATUS_CHOICES, WATCHING_TYPE_CHOICES, WATCHING_AIR_STATUS_CHOICES
 
 

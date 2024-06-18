@@ -1,6 +1,6 @@
-from utils.string_utils import normalize_file_name
 from contenting.reganam_tnetnoc.model.file_extension import FileExtension
 from contenting.reganam_tnetnoc.watchers.youtube.media import YoutubeVideo
+from utils.string_utils import normalize_file_name
 
 INFO_DICT = "info_dict"
 

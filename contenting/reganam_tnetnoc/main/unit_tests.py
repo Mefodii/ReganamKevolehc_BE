@@ -10,12 +10,12 @@ from constants.paths import TESTS_PATH
 from contenting.reganam_tnetnoc.model.file_extension import FileExtension
 from contenting.reganam_tnetnoc.model.playlist_item import PlaylistItem, PlaylistItemList
 from contenting.reganam_tnetnoc.utils import playlist_utils, db_utils, media_utils
-from contenting.reganam_tnetnoc.utils.ffmpeg import Ffmpeg
-from contenting.reganam_tnetnoc.utils.yt_datetime import yt_to_py, compare_yt_dates
 from contenting.reganam_tnetnoc.watchers.youtube.api import YoutubeWorker
 from contenting.reganam_tnetnoc.watchers.youtube.media import YoutubeVideo, YoutubeVideoList
 from contenting.reganam_tnetnoc.watchers.youtube.watcher import YoutubeWatcher
 from utils import file
+from utils.datetime_utils import yt_to_py, compare_yt_dates
+from utils.ffmpeg import Ffmpeg
 from utils.file import File
 
 TEST_READ_WRITE_PLAYLIST = "\\".join([TESTS_PATH, "test_read_write_playlist.txt"])

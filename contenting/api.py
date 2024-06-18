@@ -1,10 +1,10 @@
 from django.http import Http404
+from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 
 from constants.constants import RequestType
 from utils.drf_utils import MultiSerializerViewSet, LargeResultsSetPagination
 from .models import ContentList, ContentItem, ContentTrack, ContentWatcher, ContentMusicItem, ContentItemQuerySet
-from rest_framework import viewsets, permissions, status
 from .serializers import ContentListSerializer, ContentItemSerializer, ContentTrackReadSerializer, \
     ContentWatcherSerializer, ContentMusicItemWriteSerializer, ContentMusicItemReadSerializer, \
     ContentTrackWriteSerializer, ContentWatcherCreateSerializer

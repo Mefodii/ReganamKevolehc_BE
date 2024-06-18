@@ -1,5 +1,3 @@
-from pprint import pprint
-
 from django.core.management.base import BaseCommand
 
 from constants import paths
@@ -9,10 +7,10 @@ from constants.model_choices import CONTENT_CATEGORY_OTHER, CONTENT_WATCHER_SOUR
 from contenting.models import ContentWatcher, ContentItem
 from contenting.reganam_tnetnoc.model.file_extension import FileExtension
 from contenting.reganam_tnetnoc.model.playlist_item import PlaylistItem
-from contenting.reganam_tnetnoc.utils import yt_datetime
 from contenting.reganam_tnetnoc.watchers.youtube.media import YoutubeVideo
 from contenting.reganam_tnetnoc.watchers.youtube.watcher import YoutubeWatcher
 from contenting.serializers import ContentWatcherCreateSerializer
+from utils import datetime_utils
 
 DOWNLOAD_STATUS_MAPPING = {
     YoutubeVideo.STATUS_NO_STATUS: DOWNLOAD_STATUS_NONE,
@@ -59,7 +57,7 @@ def get_or_create_content_item(content_watcher: ContentWatcher, db_video: Youtub
     content_item.file_name = db_video.file_name if content_watcher.download else None
     content_item.position = db_video.number
     content_item.download_status = DOWNLOAD_STATUS_MAPPING[db_video.status]
-    content_item.published_at = yt_datetime.yt_to_py(db_video.published_at)
+    content_item.published_at = datetime_utils.yt_to_py(db_video.published_at)
     content_item.content_list = content_watcher.content_list
     content_item.consumed = playlist_item.item_flag == PlaylistItem.ITEM_FLAG_CONSUMED
     content_item.save()
@@ -83,4 +81,4 @@ class Command(BaseCommand):
                 video_items = watcher.db_videos.get_sorted()
                 for video_item in video_items:
                     playlist_item = watcher.playlist_items.get_by_url(video_item.get_url())
-                    content_item = get_or_create_content_item(content_watcher, video_item, playlist_item)
+                    get_or_create_content_item(content_watcher, video_item, playlist_item)

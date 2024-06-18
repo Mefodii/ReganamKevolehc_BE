@@ -1,6 +1,5 @@
 from enum import Enum
 
-
 RESTRICTED_CHARS = ['<', '>', ':', '\"', '/', '\\', '?', '*', '|']
 DEFAULT_REPLACE_CHAR = "_"
 NON_PARSED_CHARS = [

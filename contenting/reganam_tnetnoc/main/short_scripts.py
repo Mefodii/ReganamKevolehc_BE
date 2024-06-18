@@ -8,10 +8,10 @@ from constants import paths, constants
 from constants.paths import WATCHERS_DOWNLOAD_PATH, FILES_VIDEO_ARCHIVE_PATH, FILES_AUDIO_ARCHIVE_PATH
 from contenting.reganam_tnetnoc.model.file_extension import FileExtension
 from contenting.reganam_tnetnoc.utils import db_utils, playlist_utils, media_utils
-from contenting.reganam_tnetnoc.utils.yt_datetime import yt_date_diff
 from contenting.reganam_tnetnoc.watchers.youtube.api import YoutubeWorker
 from contenting.reganam_tnetnoc.watchers.youtube.media import YoutubeVideo, YoutubeVideoList
 from utils import file
+from utils.datetime_utils import yt_date_diff
 from utils.string_utils import replace_chars_variations
 
 
@@ -22,7 +22,7 @@ def alter_db_kv():
         db_file = item.get_abs_path()
         print(db_file)
 
-        videos_list = YoutubeVideoList.from_file(db_file)
+        # videos_list = YoutubeVideoList.from_file(db_file)
 
         # change DB keys and values
 

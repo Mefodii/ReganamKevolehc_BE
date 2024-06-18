@@ -1,15 +1,16 @@
 from __future__ import unicode_literals
+
 import time
+
 from constants import paths
-from contenting.reganam_tnetnoc.watchers.youtube.manager import YoutubeWatchersManager
 from contenting.reganam_tnetnoc.watchers.youtube.api import YoutubeWorker
+from contenting.reganam_tnetnoc.watchers.youtube.manager import YoutubeWatchersManager
 
 
 #######################################################################################################################
 # Main function
 #######################################################################################################################
 def __main__():
-
     watcher_files = [
         paths.YOUTUBE_WATCHERS_PATH,
         # paths.YOUTUBE_WATCHERS_SILENT_PATH,

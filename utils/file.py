@@ -1,12 +1,11 @@
-import shutil
-from os import listdir
-from os.path import isfile, join, isdir
 import codecs
-import os
 import glob
 import json
+import os
+import shutil
 import time
-
+from os import listdir
+from os.path import isfile, join, isdir
 # from stat import S_ISREG, ST_CTIME, ST_MODE
 from typing import Any
 

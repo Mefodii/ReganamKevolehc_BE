@@ -1,8 +1,8 @@
 from contenting.reganam_tnetnoc.model.file_extension import FileExtension
 from contenting.reganam_tnetnoc.model.file_tags import FileTags
-from contenting.reganam_tnetnoc.utils.ffmpeg import Ffmpeg
 from contenting.reganam_tnetnoc.watchers.youtube.media import YoutubeVideo, YoutubeVideoList
 from utils import file
+from utils.ffmpeg import Ffmpeg
 from utils.file import File
 
 
@@ -69,6 +69,7 @@ def check_validity(db_file: str, media_paths: list[str]) -> bool:
     :param media_paths:
     :return:
     """
+
     def exists(path: str, v: YoutubeVideo) -> bool:
         abs_file_name = f"{path}\\{v.file_name}.{v.file_extension.value}"
         return file.exists(abs_file_name)

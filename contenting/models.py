@@ -1,9 +1,8 @@
 from datetime import datetime
 
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Q
-
-from django.core.validators import MinValueValidator
 
 from constants.model_choices import CONTENT_CATEGORY_CHOICES, DOWNLOAD_STATUS_CHOICES, DOWNLOAD_STATUS_NONE, \
     CONTENT_ITEM_TYPE_CHOICES, CONTENT_WATCHER_SOURCE_TYPE_CHOICES, CONTENT_WATCHER_STATUS_CHOICES, \
@@ -106,7 +105,6 @@ class ContentMusicItem(ContentItemAbstract):
 
 class ContentTrack(models.Model):
     name = models.CharField(max_length=300)
-    # TODO: if track is mandatory field, then probably it is better to display track data instead of name
     position = models.IntegerField(default=1)
     start_time = models.IntegerField(default=0, validators=[MinValueValidator(0)], blank=True, null=True)
     duration = models.IntegerField(default=0, validators=[MinValueValidator(0)], blank=True, null=True)

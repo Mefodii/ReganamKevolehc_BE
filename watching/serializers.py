@@ -4,7 +4,6 @@ from .models import Group, Video, ImageModel
 
 
 class ImageModelSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = ImageModel
         fields = '__all__'

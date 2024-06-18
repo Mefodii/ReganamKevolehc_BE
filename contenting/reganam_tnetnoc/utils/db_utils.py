@@ -1,5 +1,5 @@
-from contenting.reganam_tnetnoc.utils import yt_datetime
 from contenting.reganam_tnetnoc.watchers.youtube.media import YoutubeVideo, YoutubeVideoList
+from utils.datetime_utils import compare_yt_dates
 
 
 def shift(db_file: str, number: int, step: int = 1):
@@ -108,7 +108,7 @@ def check_validity(file_path: str) -> bool:
             if not next_video.published_at:
                 valid = False
                 print(next_video)
-            if yt_datetime.compare_yt_dates(this_video.published_at, next_video.published_at) == 1:
+            if compare_yt_dates(this_video.published_at, next_video.published_at) == 1:
                 valid = False
                 print(f"Videos not sorted by published_at. IDs: {this_video.video_id}, {next_video.video_id}")
 

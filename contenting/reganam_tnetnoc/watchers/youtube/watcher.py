@@ -5,10 +5,9 @@ from typing import Self
 from constants import paths
 from contenting.reganam_tnetnoc.model.file_extension import FileExtension
 from contenting.reganam_tnetnoc.model.playlist_item import PlaylistItemList
-from contenting.reganam_tnetnoc.utils import yt_datetime
 from contenting.reganam_tnetnoc.watchers.youtube.api import YoutubeAPIItem
 from contenting.reganam_tnetnoc.watchers.youtube.media import YoutubeVideo, YoutubeVideoList
-from utils import file
+from utils import file, datetime_utils
 
 WATCHER_NAME = "watcher_name"
 CHANNEL_ID = "channel_id"
@@ -100,7 +99,7 @@ class YoutubeWatcher:
 
         name = data.get(WATCHER_NAME)
         channel_id = data.get(CHANNEL_ID)
-        check_date = data.get(CHECK_DATE, yt_datetime.get_default_ytdate())
+        check_date = data.get(CHECK_DATE, datetime_utils.get_default_utc())
         video_count = data.get(VIDEO_COUNT, 0)
         file_extension: FileExtension = FileExtension.from_str(data.get(FILE_EXTENSION))
         playlist_file = data.get(PLAYLIST_FILE)

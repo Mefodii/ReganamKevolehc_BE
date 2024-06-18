@@ -24,15 +24,20 @@ class MultiSerializerViewSet(viewsets.ModelViewSet):
 
 
 class LargeResultsSetPagination(PageNumberPagination):
-    page_size = 500
+    page_size = 5
     page_size_query_param = 'page_size'
     max_page_size = 500
 
-    def get_qparms(self, partial_response: dict[str, Any], next_page: bool) -> dict[str, Any] | None:
-        key = 'next' if next_page else "previous"
-        if partial_response.get(key, None) is None:
+    def get_qparams(self, partial_response: dict[str, Any], key: str = None) -> dict[str, Any] | None:
+        mod = 1 if key == "nextUrl" else -1 if key == "previousUrl" else 0
+        if key and partial_response.get(key, None) is None:
             return None
 
+        res = self.parse_qparams()
+        res["page"] = partial_response["page"] + mod
+        return res
+
+    def parse_qparams(self) -> dict[str, Any]:
         res = {}
         for k, v in self.request.query_params.items():
             val = v
@@ -41,19 +46,19 @@ class LargeResultsSetPagination(PageNumberPagination):
             if v.isnumeric():
                 val = int(v)
             res[k] = val
-        res["page"] = partial_response["page"] + 1 if next_page else -1
         return res
 
     def get_paginated_response(self, data):
         response = {
-            'next': self.get_next_link(),
-            'previous': self.get_previous_link(),
+            'nextUrl': self.get_next_link(),
+            'previousUrl': self.get_previous_link(),
             'count': self.page.paginator.count,
             'results': data,
             "pages": self.page.paginator.num_pages,
             "page_size": self.page_size,
             "page": int(self.request.query_params.get("page", 1))
         }
-        response["nextQParms"] = self.get_qparms(response, next_page=True)
-        response["previousQParms"] = self.get_qparms(response, next_page=False)
+        response["currentParams"] = self.get_qparams(response)
+        response["nextParams"] = self.get_qparams(response, key="nextUrl")
+        response["previousParams"] = self.get_qparams(response, key="previousUrl")
         return Response(response)

@@ -1,5 +1,6 @@
 from django.http import Http404
 from rest_framework import viewsets, permissions, status
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from constants.constants import RequestType
@@ -36,6 +37,9 @@ class ContentItemViewSet(viewsets.ModelViewSet):
         objects: ContentItemQuerySet = ContentItem.objects.get_queryset()
         content_list = self.request.query_params.get(QPARAM_CONTENT_LIST, None)
         hide_consumed = self.request.query_params.get(QPARAM_HIDE_CONSUMED, "false") == "true"
+
+        if self.request.method == "GET" and content_list is None:
+            raise ValidationError(f"Missing query param: {QPARAM_CONTENT_LIST}")
 
         objects = objects.filter_by_content_list(content_list)
         if hide_consumed:

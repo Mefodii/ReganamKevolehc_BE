@@ -91,6 +91,7 @@ class ContentTrackWriteSerializer(serializers.ModelSerializer):
 
 class ContentWatcherSerializer(serializers.ModelSerializer):
     migration_position = serializers.IntegerField(source="get_migration_position")
+    items_count = serializers.IntegerField(source="get_items_count")
 
     class Meta:
         model = ContentWatcher
@@ -112,7 +113,7 @@ class ContentWatcherCreateSerializer(serializers.ModelSerializer):
         model = ContentWatcher
         exclude = ('content_list',)
 
-    def create(self, validated_data):
+    def create(self, validated_data) -> ContentWatcher:
         if validated_data.get('content_list', None) is None:
             content_list_data = {
                 "name": validated_data['name'],
@@ -123,7 +124,7 @@ class ContentWatcherCreateSerializer(serializers.ModelSerializer):
             serializer.is_valid(raise_exception=True)
             content_list_instance = serializer.create(serializer.validated_data)
             validated_data['content_list'] = content_list_instance
-        instance: ContentWatcherSerializer = super().create(validated_data)
+        instance: ContentWatcher = super().create(validated_data)
         return instance
 
     def to_representation(self, instance):

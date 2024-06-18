@@ -1,9 +1,9 @@
 from django.http import Http404
 from rest_framework.response import Response
 
-from utils.constants import RequestType
-from utils.drf_functions import MultiSerializerViewSet
-from .models import ContentList, ContentItem, ContentTrack, ContentWatcher, ContentMusicItem, ContentItemManager
+from constants.constants import RequestType
+from utils.drf_utils import MultiSerializerViewSet, LargeResultsSetPagination
+from .models import ContentList, ContentItem, ContentTrack, ContentWatcher, ContentMusicItem, ContentItemQuerySet
 from rest_framework import viewsets, permissions, status
 from .serializers import ContentListSerializer, ContentItemSerializer, ContentTrackReadSerializer, \
     ContentWatcherSerializer, ContentMusicItemWriteSerializer, ContentMusicItemReadSerializer, \
@@ -11,6 +11,7 @@ from .serializers import ContentListSerializer, ContentItemSerializer, ContentTr
 
 QPARAM_CONTENT_LIST = "contentList"
 QPARAM_CONTENT_LIST_PURE = "getCLP"
+QPARAM_HIDE_CONSUMED = "hideConsumed"
 
 
 class ContentListViewSet(viewsets.ModelViewSet):
@@ -29,12 +30,20 @@ class ContentItemViewSet(viewsets.ModelViewSet):
         permissions.AllowAny
     ]
     serializer_class = ContentItemSerializer
+    pagination_class = LargeResultsSetPagination
 
     def get_queryset(self):
+        objects: ContentItemQuerySet = ContentItem.objects.get_queryset()
         content_list = self.request.query_params.get(QPARAM_CONTENT_LIST, None)
-        objects: ContentItemManager = ContentItem.objects
-        return objects.filter_by_content_list(content_list).order_by('position')
+        hide_consumed = self.request.query_params.get(QPARAM_HIDE_CONSUMED, "false") == "true"
 
+        objects = objects.filter_by_content_list(content_list)
+        if hide_consumed:
+            objects = objects.filter_not_consumed()
+
+        return objects.order_by('position')
+
+    # noinspection PyMethodMayBeStatic
     def put(self, request, *args, **kwargs):
         # Note 2024.06.15: Have not used ListSerializer because of deadlock situation.
         # - Update function for single object requires validated_data (which requires content_list as instance)
@@ -105,8 +114,8 @@ class ContentMusicItemViewSet(MultiSerializerViewSet):
     }
 
     def get_queryset(self):
+        objects: ContentItemQuerySet = ContentMusicItem.objects.get_queryset()
         content_list = self.request.query_params.get(QPARAM_CONTENT_LIST, None)
-        objects: ContentItemManager = ContentMusicItem.objects
         return objects.filter_by_content_list(content_list).order_by('position')
 
     def destroy(self, request, *args, **kwargs):
@@ -160,10 +169,10 @@ class ContentWatcherViewSet(MultiSerializerViewSet):
         data = {}
         try:
             instance: ContentWatcher = self.get_object()
-            content_list_instance = instance.content_list
-            content_list_instance.delete()
             data = ContentWatcherSerializer(instance=instance,
                                             context=self.get_serializer_context()).data
+            content_list_instance = instance.content_list
+            content_list_instance.delete()
             response_status = status.HTTP_200_OK
         except Http404:
             response_status = status.HTTP_404_NOT_FOUND

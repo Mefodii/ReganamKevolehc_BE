@@ -1,10 +1,10 @@
 from django.http import Http404
+from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 
-from utils.constants import RequestType
-from utils.drf_functions import MultiSerializerViewSet
+from constants.constants import RequestType
+from utils.drf_utils import MultiSerializerViewSet
 from .models import Group, Video, ImageModel, VideoManager, GroupManager
-from rest_framework import viewsets, permissions, status
 from .serializers import VideoWriteSerializer, VideoReadSerializer, ImageModelSerializer, \
     GroupReadSerializer, GroupWriteSerializer
 

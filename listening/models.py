@@ -1,9 +1,8 @@
 from datetime import datetime
 
 from django.db import models
-from django.db.models import QuerySet
 
-from contenting.content_manager.util.file_names import normalize_text
+from utils.string_utils import normalize_text
 
 ALIAS_SEPARATOR = ">{;}<"
 ARTIST_SEPARATOR = ", "

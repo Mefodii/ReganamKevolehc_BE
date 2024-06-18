@@ -13,6 +13,9 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 from pathlib import Path
 import os
 
+from constants import paths
+from constants.paths import DB_SQLITE_MAIN_PATH
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -92,7 +95,7 @@ WSGI_APPLICATION = 'ReganamKevolehc_BE.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': DB_SQLITE_MAIN_PATH,
     }
 }
 
@@ -137,3 +140,15 @@ STATIC_URL = '/static/'
 
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 MEDIA_URL = "/media/"
+
+CONTENTING_TEMP_MEDIA_ROOT = paths.CONTENTING_TEMP_ROOT
+CONTENTING_TEMP_MEDIA_URL = '/contenting-temp-media/'
+
+CONTENTING_VIDEO_MEDIA_ROOT = paths.CONTENTING_VIDEO_ROOT
+CONTENTING_VIDEO_MEDIA_URL = '/contenting-video-media/'
+
+CONTENTING_AUDIO_MEDIA_ROOT = paths.CONTENTING_AUDIO_ROOT
+CONTENTING_AUDIO_MEDIA_URL = '/contenting-audio-media/'
+
+PLAYLIST_MEDIA_ROOT = paths.PLAYLIST_ROOT
+PLAYLIST_MEDIA_URL = '/playlist-media/'

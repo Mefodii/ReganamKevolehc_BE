@@ -1,10 +1,11 @@
-import os
 import datetime
+import os
 import shutil
+
 from django.core.management.base import BaseCommand
 
+from utils import file
 from watching.resources import GroupResource, VideoResource, ImageModelResource
-from utils.File import write_file_utf8
 
 BACKUPS_PATH = "backups\\"
 MEDIA_PATH = 'media'
@@ -28,8 +29,8 @@ def export_resource(resource, export_name):
     json_file = export_name + ".json"
     csv_file = export_name + ".csv"
 
-    write_file_utf8(json_file, str(dataset.json))
-    write_file_utf8(csv_file, str(dataset.csv))
+    file.write(json_file, [str(dataset.json)], encoding=file.ENCODING_UTF8)
+    file.write(csv_file, [str(dataset.csv)], encoding=file.ENCODING_UTF8)
 
 
 def backup_tables():

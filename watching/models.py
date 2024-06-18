@@ -1,44 +1,10 @@
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
 
-from django.core.validators import MaxValueValidator, MinValueValidator
-
-from utils.constants import MODEL_LIST_SEPARATOR
-from utils.model_functions import reorder
-
-WATCHING_TYPE_ANIME = "Anime"
-WATCHING_TYPE_MOVIE = "Movie"
-WATCHING_TYPE_SERIAL = "Serial"
-
-WATCHING_STATUS_DROPPED = "Dropped"
-WATCHING_STATUS_PLANNED = "Planned"
-WATCHING_STATUS_IGNORED = "Ignored"
-WATCHING_STATUS_PREMIERE = "Premiere"
-WATCHING_STATUS_WATCHING = "Watching"
-WATCHING_STATUS_FINISHED = "Finished"
-
-WATCHING_AIR_STATUS_ONGOING = "Ongoing"
-WATCHING_AIR_STATUS_COMPLETED = "Completed"
-
-WATCHING_TYPE_CHOICES = (
-    (WATCHING_TYPE_ANIME, WATCHING_TYPE_ANIME),
-    (WATCHING_TYPE_MOVIE, WATCHING_TYPE_MOVIE),
-    (WATCHING_TYPE_SERIAL, WATCHING_TYPE_SERIAL),
-)
-
-WATCHING_STATUS_CHOICES = (
-    (WATCHING_STATUS_DROPPED, WATCHING_STATUS_DROPPED),
-    (WATCHING_STATUS_PLANNED, WATCHING_STATUS_PLANNED),
-    (WATCHING_STATUS_IGNORED, WATCHING_STATUS_IGNORED),
-    (WATCHING_STATUS_PREMIERE, WATCHING_STATUS_PREMIERE),
-    (WATCHING_STATUS_WATCHING, WATCHING_STATUS_WATCHING),
-    (WATCHING_STATUS_FINISHED, WATCHING_STATUS_FINISHED),
-)
-
-WATCHING_AIR_STATUS_CHOICES = (
-    (WATCHING_AIR_STATUS_ONGOING, WATCHING_AIR_STATUS_ONGOING),
-    (WATCHING_AIR_STATUS_COMPLETED, WATCHING_AIR_STATUS_COMPLETED),
-)
+from constants.constants import MODEL_LIST_SEPARATOR
+from constants.model_choices import WATCHING_TYPE_CHOICES, WATCHING_STATUS_CHOICES, WATCHING_AIR_STATUS_CHOICES
+from utils.model_utils import reorder
 
 
 class GroupManager(models.Manager):
@@ -157,6 +123,7 @@ class Video(models.Model):
 
 class ImageModel(models.Model):
     group = models.ForeignKey(Group, related_name="images", on_delete=models.CASCADE)
+    # NOTE: upload to dynamic folder
     image = models.ImageField(upload_to="video/image/")
 
     def __str__(self):

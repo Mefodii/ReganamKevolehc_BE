@@ -27,3 +27,7 @@ urlpatterns = [
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.CONTENTING_TEMP_MEDIA_URL, document_root=settings.CONTENTING_TEMP_MEDIA_ROOT)
+    urlpatterns += static(settings.CONTENTING_VIDEO_MEDIA_URL, document_root=settings.CONTENTING_VIDEO_MEDIA_ROOT)
+    urlpatterns += static(settings.CONTENTING_AUDIO_MEDIA_URL, document_root=settings.CONTENTING_AUDIO_MEDIA_ROOT)
+    urlpatterns += static(settings.PLAYLIST_MEDIA_URL, document_root=settings.PLAYLIST_MEDIA_ROOT)

@@ -1,23 +1,21 @@
 from django.core.management.base import BaseCommand
 
 from constants import paths
-from constants.model_choices import CONTENT_CATEGORY_OTHER, CONTENT_WATCHER_SOURCE_TYPE_YOUTUBE, \
-    CONTENT_WATCHER_STATUS_FINISHED, DOWNLOAD_STATUS_NONE, DOWNLOAD_STATUS_UNABLE, DOWNLOAD_STATUS_DOWNLOADED, \
-    DOWNLOAD_STATUS_MISSING, DOWNLOAD_STATUS_SKIP
+from constants.enums import ContentCategory, DownloadStatus, ContentWatcherSourceType, ContentWatcherStatus
+from constants.enums import FileExtension
 from contenting.models import ContentWatcher, ContentItem
-from contenting.reganam_tnetnoc.model.file_extension import FileExtension
 from contenting.reganam_tnetnoc.model.playlist_item import PlaylistItem
 from contenting.reganam_tnetnoc.watchers.youtube.media import YoutubeVideo
 from contenting.reganam_tnetnoc.watchers.youtube.watcher import YoutubeWatcher
 from contenting.serializers import ContentWatcherCreateSerializer
 from utils import datetime_utils
 
-DOWNLOAD_STATUS_MAPPING = {
-    YoutubeVideo.STATUS_NO_STATUS: DOWNLOAD_STATUS_NONE,
-    YoutubeVideo.STATUS_UNABLE: DOWNLOAD_STATUS_UNABLE,
-    YoutubeVideo.STATUS_DOWNLOADED: DOWNLOAD_STATUS_DOWNLOADED,
-    YoutubeVideo.STATUS_MISSING: DOWNLOAD_STATUS_MISSING,
-    YoutubeVideo.STATUS_SKIP: DOWNLOAD_STATUS_SKIP,
+DOWNLOAD_STATUS_MAPPING: dict[str, DownloadStatus] = {
+    YoutubeVideo.STATUS_NO_STATUS: DownloadStatus.NONE,
+    YoutubeVideo.STATUS_UNABLE: DownloadStatus.UNABLE,
+    YoutubeVideo.STATUS_DOWNLOADED: DownloadStatus.DOWNLOADED,
+    YoutubeVideo.STATUS_MISSING: DownloadStatus.MISSING,
+    YoutubeVideo.STATUS_SKIP: DownloadStatus.SKIP,
 }
 
 
@@ -28,10 +26,10 @@ def get_or_create_content_watcher(watcher: YoutubeWatcher) -> ContentWatcher:
     except ContentWatcher.DoesNotExist:
         cw_data = {
             "name": watcher.name,
-            "category": CONTENT_CATEGORY_OTHER,  # NOTE: set category manually after import
+            "category": ContentCategory.OTHER.value,  # NOTE: set category manually after import
             "watcher_id": watcher.channel_id,
-            "source_type": CONTENT_WATCHER_SOURCE_TYPE_YOUTUBE,
-            "status": CONTENT_WATCHER_STATUS_FINISHED,
+            "source_type": ContentWatcherSourceType.YOUTUBE.value,
+            "status": ContentWatcherStatus.FINISHED.value,
             "check_date": watcher.check_date,
             "download": False,
             "file_extension": watcher.file_extension,
@@ -56,7 +54,7 @@ def get_or_create_content_item(content_watcher: ContentWatcher, db_video: Youtub
     content_item.title = db_video.title
     content_item.file_name = db_video.file_name if content_watcher.download else None
     content_item.position = db_video.number
-    content_item.download_status = DOWNLOAD_STATUS_MAPPING[db_video.status]
+    content_item.download_status = DOWNLOAD_STATUS_MAPPING[db_video.status].value
     content_item.published_at = datetime_utils.yt_to_py(db_video.published_at)
     content_item.content_list = content_watcher.content_list
     content_item.consumed = playlist_item.item_flag == PlaylistItem.ITEM_FLAG_CONSUMED

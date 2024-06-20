@@ -6,8 +6,8 @@ import time
 from icecream import ic
 
 from constants import paths
+from constants.enums import FileExtension
 from constants.paths import TESTS_PATH
-from contenting.reganam_tnetnoc.model.file_extension import FileExtension
 from contenting.reganam_tnetnoc.model.playlist_item import PlaylistItem, PlaylistItemList
 from contenting.reganam_tnetnoc.utils import playlist_utils, db_utils, media_utils
 from contenting.reganam_tnetnoc.watchers.youtube.api import YoutubeWorker

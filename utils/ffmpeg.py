@@ -6,7 +6,7 @@ from typing import Tuple
 # noinspection PyPackageRequirements
 import ffmpeg
 
-from contenting.reganam_tnetnoc.model.file_extension import FileExtension
+from constants.enums import FileExtension
 from utils import file
 
 METADATA_HEADER = ";FFMETADATA1"

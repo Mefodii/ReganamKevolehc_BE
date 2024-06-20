@@ -2,12 +2,9 @@
 from yt_dlp import DownloadError
 
 from constants import env, paths
-from constants.model_choices import CONTENT_WATCHER_STATUS_RUNNING, DOWNLOAD_STATUS_NONE, DOWNLOAD_STATUS_PENDING, \
-    DOWNLOAD_STATUS_SKIP, CONTENT_ITEM_TYPE_SINGLE, CONTENT_WATCHER_STATUS_ERROR, CONTENT_WATCHER_STATUS_DEAD, \
-    CONTENT_WATCHER_STATUS_NONE, CONTENT_WATCHER_STATUS_FINISHED, CONTENT_WATCHER_STATUS_WARNING, \
-    DOWNLOAD_STATUS_DOWNLOADED, DOWNLOAD_STATUS_UNABLE
+from constants.enums import DownloadStatus, ContentItemType, ContentWatcherStatus
+from constants.enums import FileExtension
 from contenting.models import ContentWatcher, ContentItem, ContentMusicItem
-from contenting.reganam_tnetnoc.model.file_extension import FileExtension
 from contenting.reganam_tnetnoc.utils.downloader import YoutubeDownloader
 from contenting.reganam_tnetnoc.watchers.youtube.api import YoutubeWorker, YoutubeAPIItem
 from contenting.reganam_tnetnoc.watchers.youtube.queue import YoutubeQueue
@@ -49,26 +46,26 @@ class YoutubeWatcherDjangoManager:
                 print(message)
 
     def run_updates(self) -> None:
-        if self.watcher.status in (CONTENT_WATCHER_STATUS_DEAD, CONTENT_WATCHER_STATUS_NONE):
+        if self.watcher.status in (ContentWatcherStatus.DEAD.value, ContentWatcherStatus.NONE.value):
             raise ValueError(f"Invalid status for watcher: {str(self.watcher)}")
 
         try:
-            self.watcher.status = CONTENT_WATCHER_STATUS_RUNNING
+            self.watcher.status = ContentWatcherStatus.RUNNING.value
             self.watcher.save()
             self.check_for_updates()
             self.download_pending()
             self.append_tags()
 
             if self.status == YoutubeWatcherDjangoManager.STATUS_OK:
-                self.watcher.status = CONTENT_WATCHER_STATUS_FINISHED
+                self.watcher.status = ContentWatcherStatus.FINISHED.value
             elif self.status == YoutubeWatcherDjangoManager.STATUS_WARNING:
-                self.watcher.status = CONTENT_WATCHER_STATUS_WARNING
+                self.watcher.status = ContentWatcherStatus.WARNING.value
             elif self.status == YoutubeWatcherDjangoManager.STATUS_ERROR:
-                self.watcher.status = CONTENT_WATCHER_STATUS_ERROR
+                self.watcher.status = ContentWatcherStatus.ERROR.value
             self.watcher.check_date = self.new_check_date
             self.watcher.save()
         except Exception as e:
-            self.watcher.status = CONTENT_WATCHER_STATUS_ERROR
+            self.watcher.status = ContentWatcherStatus.ERROR.value
             self.watcher.save()
             raise e
 
@@ -81,11 +78,11 @@ class YoutubeWatcherDjangoManager:
         ...
 
     def check_for_updates(self) -> None:
-        self.log(f'{str(datetime_utils.get_utcnow())}. '
+        self.log(f'{str(datetime_utils.utcnow())}. '
                  f'Checking: {self.watcher.watcher_id} - {self.watcher.name}', True)
 
         check_date = datetime_utils.py_to_yt(self.watcher.check_date)
-        self.new_check_date = datetime_utils.get_utcnow()
+        self.new_check_date = datetime_utils.utcnow()
         api_videos = self.api.get_uploads(self.watcher.watcher_id, check_date)
 
         self.log(f"{self.watcher.name.ljust(30)} || New uploads - {len(api_videos)}", True)
@@ -102,11 +99,11 @@ class YoutubeWatcherDjangoManager:
 
             content_item.save()
 
-            if content_item.download_status == DOWNLOAD_STATUS_SKIP:
+            if content_item.download_status == DownloadStatus.SKIP.value:
                 self.log(f"Video skipped: {api_video.get_id()}", True)
                 print(f"Api data: {api_video}")
 
-            if content_item.download_status == DOWNLOAD_STATUS_PENDING:
+            if content_item.download_status == DownloadStatus.PENDING.value:
                 self.pending_content_items.append(content_item)
 
     def new_content_item(self, yt_api_item: YoutubeAPIItem, position: int) -> ContentItem:
@@ -118,7 +115,7 @@ class YoutubeWatcherDjangoManager:
     def new_content_music_item(self, yt_api_item: YoutubeAPIItem, position: int) -> ContentMusicItem:
         content_item = ContentMusicItem()
         self.set_content_item_common_fields(content_item, yt_api_item, position)
-        content_item.type = CONTENT_ITEM_TYPE_SINGLE
+        content_item.type = ContentItemType.SINGLE.value
         return content_item
 
     def set_content_item_common_fields(self, content_item: ContentItem | ContentMusicItem, yt_api_item: YoutubeAPIItem,
@@ -128,7 +125,7 @@ class YoutubeWatcherDjangoManager:
         content_item.title = yt_api_item.get_title()
         content_item.file_name = None
         content_item.position = position
-        content_item.download_status = DOWNLOAD_STATUS_NONE
+        content_item.download_status = DownloadStatus.NONE.value
         content_item.published_at = datetime_utils.yt_to_py(yt_api_item.get_publish_date())
         content_item.content_list = self.watcher.content_list
 
@@ -136,7 +133,7 @@ class YoutubeWatcherDjangoManager:
             content_item.file_name = normalize_file_name(
                 " - ".join([str(position), self.watcher.name, content_item.title]))
             skip = not yt_api_item.has_valid_duration()
-            content_item.download_status = DOWNLOAD_STATUS_SKIP if skip else DOWNLOAD_STATUS_PENDING
+            content_item.download_status = DownloadStatus.SKIP.value if skip else DownloadStatus.PENDING.value
 
     def download_pending(self):
         q_len = str(len(self.pending_content_items))
@@ -155,9 +152,9 @@ class YoutubeWatcherDjangoManager:
                     self.log(f"Unable to download - {queue.url}", True)
 
             if file.exists(result_file):
-                content_item.download_status = DOWNLOAD_STATUS_DOWNLOADED
+                content_item.download_status = DownloadStatus.DOWNLOADED.value
             else:
-                content_item.download_status = DOWNLOAD_STATUS_UNABLE
+                content_item.download_status = DownloadStatus.UNABLE.value
             content_item.save()
 
     def new_queue(self, content_item: ContentItem | ContentMusicItem) -> YoutubeQueue:

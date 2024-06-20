@@ -18,16 +18,18 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
 
+from ReganamKevolehc_BE.views import get_consts
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('watching/', include("watching.urls")),
     path('listening/', include("listening.urls")),
     path('contenting/', include("contenting.urls")),
+    path("api/sync_check/", get_consts),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    urlpatterns += static(settings.CONTENTING_TEMP_MEDIA_URL, document_root=settings.CONTENTING_TEMP_MEDIA_ROOT)
-    urlpatterns += static(settings.CONTENTING_VIDEO_MEDIA_URL, document_root=settings.CONTENTING_VIDEO_MEDIA_ROOT)
-    urlpatterns += static(settings.CONTENTING_AUDIO_MEDIA_URL, document_root=settings.CONTENTING_AUDIO_MEDIA_ROOT)
-    urlpatterns += static(settings.PLAYLIST_MEDIA_URL, document_root=settings.PLAYLIST_MEDIA_ROOT)
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+urlpatterns += static(settings.CONTENTING_TEMP_MEDIA_URL, document_root=settings.CONTENTING_TEMP_MEDIA_ROOT)
+urlpatterns += static(settings.CONTENTING_VIDEO_MEDIA_URL, document_root=settings.CONTENTING_VIDEO_MEDIA_ROOT)
+urlpatterns += static(settings.CONTENTING_AUDIO_MEDIA_URL, document_root=settings.CONTENTING_AUDIO_MEDIA_ROOT)
+urlpatterns += static(settings.PLAYLIST_MEDIA_URL, document_root=settings.PLAYLIST_MEDIA_ROOT)

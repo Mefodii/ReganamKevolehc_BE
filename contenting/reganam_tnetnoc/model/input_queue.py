@@ -1,7 +1,7 @@
 from enum import Enum
 
 from constants import constants
-from contenting.reganam_tnetnoc.model.file_extension import FileExtension
+from constants.enums import FileExtension
 
 ARGUMENTS_FLAG = "<!>"
 WATCHER_LIKE_FLAG = "<#>"

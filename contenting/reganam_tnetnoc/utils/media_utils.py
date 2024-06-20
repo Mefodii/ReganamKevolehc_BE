@@ -1,4 +1,4 @@
-from contenting.reganam_tnetnoc.model.file_extension import FileExtension
+from constants.enums import FileExtension
 from contenting.reganam_tnetnoc.model.file_tags import FileTags
 from contenting.reganam_tnetnoc.watchers.youtube.media import YoutubeVideo, YoutubeVideoList
 from utils import file

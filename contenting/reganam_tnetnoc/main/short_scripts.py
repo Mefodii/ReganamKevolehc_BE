@@ -5,8 +5,8 @@ import time
 import yt_dlp as youtube_dl
 
 from constants import paths, constants
+from constants.enums import FileExtension
 from constants.paths import WATCHERS_DOWNLOAD_PATH, FILES_VIDEO_ARCHIVE_PATH, FILES_AUDIO_ARCHIVE_PATH
-from contenting.reganam_tnetnoc.model.file_extension import FileExtension
 from contenting.reganam_tnetnoc.utils import db_utils, playlist_utils, media_utils
 from contenting.reganam_tnetnoc.watchers.youtube.api import YoutubeWorker
 from contenting.reganam_tnetnoc.watchers.youtube.media import YoutubeVideo, YoutubeVideoList

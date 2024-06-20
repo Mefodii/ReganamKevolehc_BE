@@ -1,13 +1,11 @@
-from datetime import datetime
-
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Q
 
-from constants.model_choices import CONTENT_CATEGORY_CHOICES, DOWNLOAD_STATUS_CHOICES, DOWNLOAD_STATUS_NONE, \
-    CONTENT_ITEM_TYPE_CHOICES, CONTENT_WATCHER_SOURCE_TYPE_CHOICES, CONTENT_WATCHER_STATUS_CHOICES, \
-    CONTENT_WATCHER_STATUS_NONE, FILE_EXTENSION_CHOICES, VIDEO_QUALITY_CHOICES, CONTENT_CATEGORY_MUSIC
+from constants.enums import ContentCategory, DownloadStatus, ContentItemType, ContentWatcherSourceType, FileExtension, \
+    ContentWatcherStatus, VideoQuality
 from listening.models import Track
+from utils.datetime_utils import default_datetime
 from utils.model_utils import reorder
 
 
@@ -25,8 +23,8 @@ class ContentListQuerySet(models.QuerySet):
 
 class ContentList(models.Model):
     name = models.CharField(max_length=200)
-    category = models.CharField(max_length=50, choices=CONTENT_CATEGORY_CHOICES)
-    migration_position = models.IntegerField(default=0)
+    category = models.CharField(max_length=50, choices=ContentCategory.as_choices())
+    migration_position = models.IntegerField(validators=[MinValueValidator(0)])
 
     objects = ContentListQuerySet.as_manager()
 
@@ -46,14 +44,13 @@ class ContentItemQuerySet(models.QuerySet):
 
 
 class ContentItemAbstract(models.Model):
-    item_id = models.CharField(max_length=100)
-    url = models.CharField(max_length=500, blank=True, null=True)
+    item_id = models.CharField(max_length=100, blank=True)
+    url = models.CharField(max_length=500, blank=True)
     title = models.CharField(max_length=500)
-    file_name = models.CharField(max_length=500, blank=True, null=True)
-    position = models.IntegerField(default=1)
-    download_status = models.CharField(max_length=50, choices=DOWNLOAD_STATUS_CHOICES, blank=True,
-                                       default=DOWNLOAD_STATUS_NONE)
-    published_at = models.DateTimeField(default=datetime(2001, 1, 1), null=True, blank=True)
+    file_name = models.CharField(max_length=500, blank=True)
+    position = models.IntegerField(validators=[MinValueValidator(0)])
+    download_status = models.CharField(max_length=50, choices=DownloadStatus.as_choices())
+    published_at = models.DateTimeField(default=default_datetime(), blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
@@ -65,7 +62,7 @@ class ContentItemAbstract(models.Model):
 
 
 class ContentItem(ContentItemAbstract):
-    consumed = models.BooleanField(default=False)
+    consumed = models.BooleanField()
     content_list = models.ForeignKey(ContentList, related_name="content_items", on_delete=models.CASCADE)
 
     def reorder(self, old_position, new_position):
@@ -83,7 +80,7 @@ class ContentItem(ContentItemAbstract):
 
 
 class ContentMusicItem(ContentItemAbstract):
-    type = models.CharField(max_length=50, choices=CONTENT_ITEM_TYPE_CHOICES)
+    type = models.CharField(max_length=50, choices=ContentItemType.as_choices())
     content_list = models.ForeignKey(ContentList, related_name="content_music_items", on_delete=models.CASCADE)
 
     def __str__(self):
@@ -105,16 +102,16 @@ class ContentMusicItem(ContentItemAbstract):
 
 class ContentTrack(models.Model):
     name = models.CharField(max_length=300)
-    position = models.IntegerField(default=1)
-    start_time = models.IntegerField(default=0, validators=[MinValueValidator(0)], blank=True, null=True)
-    duration = models.IntegerField(default=0, validators=[MinValueValidator(0)], blank=True, null=True)
-    comment = models.CharField(max_length=200, blank=True, null=True)
+    position = models.IntegerField(validators=[MinValueValidator(0)])
+    start_time = models.IntegerField(default=None, validators=[MinValueValidator(0)], blank=True, null=True)
+    duration = models.IntegerField(default=None, validators=[MinValueValidator(0)], blank=True, null=True)
+    comment = models.CharField(max_length=200, blank=True)
     content_item = models.ForeignKey(ContentMusicItem, related_name="tracks", on_delete=models.CASCADE)
 
-    needs_edit = models.BooleanField(default=False)
+    needs_edit = models.BooleanField()
     like = models.BooleanField(default=None, blank=True, null=True)
-    is_duplicate = models.BooleanField(default=False)
-    is_track = models.BooleanField(default=True)
+    is_duplicate = models.BooleanField()
+    is_track = models.BooleanField()
     track = models.ForeignKey(Track, related_name="content_tracks", on_delete=models.SET_NULL, blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -147,15 +144,14 @@ class ContentWatcherQuerySet(models.QuerySet):
 
 class ContentWatcher(models.Model):
     name = models.CharField(max_length=200)
-    category = models.CharField(max_length=50, choices=CONTENT_CATEGORY_CHOICES)
+    category = models.CharField(max_length=50, choices=ContentCategory.as_choices())
     watcher_id = models.CharField(max_length=200)
-    source_type = models.CharField(max_length=50, choices=CONTENT_WATCHER_SOURCE_TYPE_CHOICES)
-    status = models.CharField(max_length=50, choices=CONTENT_WATCHER_STATUS_CHOICES,
-                              default=CONTENT_WATCHER_STATUS_NONE)
-    check_date = models.DateTimeField(default=datetime(2001, 1, 1))
-    download = models.BooleanField(default=False)
-    file_extension = models.CharField(max_length=50, choices=FILE_EXTENSION_CHOICES)
-    video_quality = models.IntegerField(default=None, choices=VIDEO_QUALITY_CHOICES, blank=True, null=True)
+    source_type = models.CharField(max_length=50, choices=ContentWatcherSourceType.as_choices())
+    status = models.CharField(max_length=50, choices=ContentWatcherStatus.as_choices())
+    check_date = models.DateTimeField(default=default_datetime())
+    download = models.BooleanField()
+    file_extension = models.CharField(max_length=50, choices=FileExtension.as_choices(), blank=True, null=True)
+    video_quality = models.IntegerField(choices=VideoQuality.as_choices())
     content_list = models.OneToOneField(ContentList, related_name="content_watcher", on_delete=models.CASCADE)
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -164,13 +160,13 @@ class ContentWatcher(models.Model):
     objects = ContentWatcherQuerySet.as_manager()
 
     def is_music(self):
-        return self.category == CONTENT_CATEGORY_MUSIC
+        return self.category == ContentCategory.MUSIC.value
 
     def get_migration_position(self) -> int:
         return self.content_list.migration_position
 
     def get_items_count(self):
-        return self.content_list.content_items.count() + self.content_list.content_music_items.count()
+        return self.get_content_items().count() + self.get_content_music_items().count()
 
     def get_content_items(self):
         return self.content_list.content_items

@@ -1,5 +1,6 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
+import pytz
 from dateutil import parser
 
 
@@ -61,15 +62,13 @@ def yt_hours_diff(d1, d2) -> float:
     return divmod(diff.total_seconds(), 3600)[0]
 
 
-def py_to_yt(py_datetime) -> str:
-    s = py_datetime.strftime('%Y-%m-%dT%H:%M:%S.%f')
-    return s[:-3] + "Z"
+def py_to_yt(py_datetime) -> str: return py_datetime.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + "Z"
 
 
-def get_default_utc() -> str:
-    t = datetime(1970, 1, 1)
-    return py_to_yt(t)
+def default_datetime() -> date: return datetime(2001, 1, 1, tzinfo=pytz.UTC)
 
 
-def get_utcnow() -> str:
-    return py_to_yt(datetime.utcnow())
+def default_utc() -> str: return py_to_yt(default_datetime())
+
+
+def utcnow() -> str: return py_to_yt(datetime.utcnow())

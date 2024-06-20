@@ -3,7 +3,7 @@ from django.db import models
 from django.db.models import Q
 
 from constants.constants import MODEL_LIST_SEPARATOR
-from constants.model_choices import WATCHING_TYPE_CHOICES, WATCHING_STATUS_CHOICES, WATCHING_AIR_STATUS_CHOICES
+from constants.enums import WatchingType, WatchingStatus, WatchingAirStatus
 from utils.model_utils import reorder
 
 
@@ -19,17 +19,23 @@ class Group(models.Model):
     name = models.CharField(max_length=200)
     alias = models.CharField(max_length=1000, blank=True)  # with MODEL_LIST_SEPARATOR
     links_arr = models.CharField(max_length=3000, blank=True)  # with MODEL_LIST_SEPARATOR
-    type = models.CharField(max_length=50, choices=WATCHING_TYPE_CHOICES)
+    type = models.CharField(max_length=50, choices=WatchingType.as_choices())
+
+    single = models.BooleanField()
+
+    # NOTE: relevant fields for single = False, otherwise default value
+    airing_status = models.CharField(max_length=50, choices=WatchingAirStatus.as_choices(), blank=True)
+    check_date = models.DateField(default=None, blank=True, null=True)
+
+    # NOTE: relevant fields for single = True, otherwise default value
+    status = models.CharField(max_length=50, choices=WatchingStatus.as_choices(), blank=True)
+    watched_date = models.DateField(default=None, blank=True, null=True)
+    rating = models.IntegerField(default=None, validators=[MinValueValidator(0), MaxValueValidator(10)],
+                                 blank=True, null=True)
+    year = models.IntegerField(default=None, blank=True, null=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
-    check_date = models.DateField(blank=True, null=True)
-    watched_date = models.DateField(blank=True, null=True)
-    single = models.BooleanField(default=False)
-    status = models.CharField(max_length=50, choices=WATCHING_STATUS_CHOICES, blank=True, null=True)
-    airing_status = models.CharField(max_length=50, choices=WATCHING_AIR_STATUS_CHOICES, blank=True, null=True)
-    rating = models.IntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(10)],
-                                 blank=True, null=True)
-    year = models.IntegerField(default=0, blank=True, null=True)
 
     objects = GroupManager()
 
@@ -68,16 +74,16 @@ class Video(models.Model):
     comment = models.CharField(max_length=200, blank=True)
     alias = models.CharField(max_length=1000, blank=True)  # with MODEL_LIST_SEPARATOR
     links_arr = models.CharField(max_length=3000, blank=True)  # with MODEL_LIST_SEPARATOR
-    year = models.IntegerField(default=0)
-    type = models.CharField(max_length=50, choices=WATCHING_TYPE_CHOICES)
-    status = models.CharField(max_length=50, choices=WATCHING_STATUS_CHOICES)
-    order = models.IntegerField(default=1)
-    episodes = models.IntegerField(default=1)
-    current_episode = models.IntegerField(default=0)
-    rating = models.IntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(10)])
-    watched_date = models.DateField(blank=True, null=True)
+    year = models.IntegerField(default=None, blank=True, null=True)
+    status = models.CharField(max_length=50, choices=WatchingStatus.as_choices())
+    order = models.IntegerField()
+    episodes = models.IntegerField()
+    current_episode = models.IntegerField()
+    rating = models.IntegerField(default=None, validators=[MinValueValidator(0), MaxValueValidator(10)],
+                                 blank=True, null=True)
+    watched_date = models.DateField(default=None, blank=True, null=True)
 
-    group = models.ForeignKey(Group, on_delete=models.CASCADE, null=True, related_name="videos")
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name="videos")
 
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
@@ -123,7 +129,8 @@ class Video(models.Model):
 
 class ImageModel(models.Model):
     group = models.ForeignKey(Group, related_name="images", on_delete=models.CASCADE)
-    # NOTE: upload to dynamic folder
+    # NOTE: upload to dynamic folder:
+    # https://docs.djangoproject.com/en/5.0/ref/models/fields/#django.db.models.FileField.upload_to
     image = models.ImageField(upload_to="video/image/")
 
     def __str__(self):

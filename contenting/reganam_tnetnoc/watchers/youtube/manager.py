@@ -15,7 +15,7 @@ from contenting.reganam_tnetnoc.watchers.youtube.media import YoutubeVideo
 from contenting.reganam_tnetnoc.watchers.youtube.queue import YoutubeQueue
 from contenting.reganam_tnetnoc.watchers.youtube.watcher import YoutubeWatcher
 from utils import file
-from utils.datetime_utils import compare_yt_dates, get_utcnow, get_default_utc
+from utils.datetime_utils import compare_yt_dates, utcnow, default_utc
 from utils.ffmpeg import Ffmpeg
 
 
@@ -51,7 +51,7 @@ class YoutubeWatchersManager:
         self.finish()
 
     def run_integrity(self):
-        self.log(str(get_utcnow()) + " - starting to check for missing videos", True)
+        self.log(str(utcnow()) + " - starting to check for missing videos", True)
         self.extract_all_api_videos()
         self.generate_queue()
         self.download_queue()
@@ -86,10 +86,10 @@ class YoutubeWatchersManager:
         self.append_tags()
 
     def check_for_updates(self) -> None:
-        self.log(str(get_utcnow()) + " - starting update process for watchers")
+        self.log(str(utcnow()) + " - starting update process for watchers")
         for watcher in self.watchers:
             self.log(f'Checking: {watcher.channel_id} - {watcher.name}', True)
-            watcher.new_check_date = get_utcnow()
+            watcher.new_check_date = utcnow()
             api_videos = self.api.get_uploads(watcher.channel_id, watcher.check_date)
 
             self.log(f"{watcher.name.ljust(30)} || New uploads - {len(api_videos)}", True)
@@ -107,7 +107,7 @@ class YoutubeWatchersManager:
     def extract_all_api_videos(self):
         for watcher in self.watchers:
             watcher.new_check_date = watcher.check_date
-            api_videos = self.api.get_uploads(watcher.channel_id, get_default_utc(),
+            api_videos = self.api.get_uploads(watcher.channel_id, default_utc(),
                                               watcher.check_date)
             watcher.api_videos = api_videos
             watcher.extract_missing()

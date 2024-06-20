@@ -5,6 +5,7 @@ from .models import ContentList, ContentItem, ContentTrack, ContentWatcher, Cont
 
 class ContentListSerializer(serializers.ModelSerializer):
     content_watcher = serializers.PrimaryKeyRelatedField(many=False, read_only=True)
+    consumed = serializers.BooleanField(source="is_consumed")
 
     class Meta:
         model = ContentList
@@ -29,6 +30,8 @@ class ContentItemSerializer(serializers.ModelSerializer):
 
 
 class ContentMusicItemWriteSerializer(serializers.ModelSerializer):
+    consumed = serializers.BooleanField(source="is_consumed")
+
     class Meta:
         model = ContentMusicItem
         fields = '__all__'
@@ -92,6 +95,7 @@ class ContentTrackWriteSerializer(serializers.ModelSerializer):
 class ContentWatcherSerializer(serializers.ModelSerializer):
     migration_position = serializers.IntegerField(source="get_migration_position")
     items_count = serializers.IntegerField(source="get_items_count")
+    consumed = serializers.BooleanField(source="is_consumed")
 
     class Meta:
         model = ContentWatcher

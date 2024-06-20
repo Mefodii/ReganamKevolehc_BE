@@ -28,6 +28,16 @@ class ContentList(models.Model):
 
     objects = ContentListQuerySet.as_manager()
 
+    def is_music(self):
+        return self.category == ContentCategory.MUSIC.value
+
+    def is_consumed(self):
+        if self.is_music():
+            t = self.content_music_items.filter(tracks__consumed=False)
+            print(t)
+            return t.exists() is False
+        return self.content_items.filter(consumed=False).exists() is False
+
     def __str__(self):
         return f'{self.name}'
 
@@ -83,8 +93,8 @@ class ContentMusicItem(ContentItemAbstract):
     type = models.CharField(max_length=50, choices=ContentItemType.as_choices())
     content_list = models.ForeignKey(ContentList, related_name="content_music_items", on_delete=models.CASCADE)
 
-    def __str__(self):
-        return f'{str(self.content_list)}/{self.title} - {self.position}'
+    def is_consumed(self):
+        return self.tracks.filter(consumed=False).exists() is False
 
     def reorder(self, old_position, new_position):
         reorder(self, old_position, new_position, "position", "content_list")
@@ -99,6 +109,9 @@ class ContentMusicItem(ContentItemAbstract):
     def deleted(self):
         self.reorder(self.position, None)
 
+    def __str__(self):
+        return f'{str(self.content_list)}/{self.title} - {self.position}'
+
 
 class ContentTrack(models.Model):
     name = models.CharField(max_length=300)
@@ -107,6 +120,7 @@ class ContentTrack(models.Model):
     duration = models.IntegerField(default=None, validators=[MinValueValidator(0)], blank=True, null=True)
     comment = models.CharField(max_length=200, blank=True)
     content_item = models.ForeignKey(ContentMusicItem, related_name="tracks", on_delete=models.CASCADE)
+    consumed = models.BooleanField()
 
     needs_edit = models.BooleanField()
     like = models.BooleanField(default=None, blank=True, null=True)
@@ -158,6 +172,9 @@ class ContentWatcher(models.Model):
     modified_at = models.DateTimeField(auto_now=True)
 
     objects = ContentWatcherQuerySet.as_manager()
+
+    def is_consumed(self):
+        return self.content_list.is_consumed()
 
     def is_music(self):
         return self.category == ContentCategory.MUSIC.value

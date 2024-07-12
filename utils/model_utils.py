@@ -1,3 +1,5 @@
+from typing import Self
+
 from django.db import models
 
 
@@ -30,3 +32,8 @@ def reorder(instance: models.Model, old_order: int | None, new_order: int | None
         new_attr = getattr(o, field_name) + order_mod
         setattr(o, field_name, new_attr)
         o.save()
+
+
+class TypedQuerySet(models.QuerySet):
+    def filter(self, *args, **kwargs) -> Self:
+        return super().filter(*args, **kwargs)

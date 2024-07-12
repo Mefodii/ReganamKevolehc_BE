@@ -94,7 +94,7 @@ class YoutubeDownloader:
         merged_file = queue.file_name + "." + queue.file_extension.value
         Ffmpeg.merge_audio_and_video(queue.save_location, audio_file, video_file, merged_file)
 
-        if video_quality:
+        if video_quality and video_quality != -1:
             print(f"Resizing video file to: {video_quality}")
             Ffmpeg.resize(f"{queue.save_location}\\{merged_file}", height=video_quality, scale_bitrate=True)
 

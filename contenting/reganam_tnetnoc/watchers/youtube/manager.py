@@ -1,4 +1,4 @@
-from __future__ import unicode_literals
+from __future__ import unicode_literals, annotations
 
 # noinspection PyProtectedMember
 from yt_dlp import DownloadError
@@ -129,6 +129,7 @@ class YoutubeWatchersManager:
                 self.queue_list.append(queue)
                 print(repr(queue))
 
+    # noinspection DuplicatedCode
     def download_queue(self):
         q_len = str(len(self.queue_list))
 

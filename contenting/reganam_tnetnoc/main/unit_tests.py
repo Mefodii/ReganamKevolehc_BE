@@ -224,7 +224,7 @@ def test_sync_media() -> bool:
         temp_file: File = f1
         expected_file: File = f2
 
-        if f1.name != f2.name:
+        if temp_file.name != expected_file.name:
             print(f"Files not equal. Expected: {expected_file.name}. Actual: {temp_file.name}")
             return False
 

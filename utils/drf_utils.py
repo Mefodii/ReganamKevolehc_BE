@@ -23,8 +23,8 @@ class MultiSerializerViewSet(viewsets.ModelViewSet):
         return self.serializers.get(self.action, self.serializers[RequestType.DEFAULT.value])
 
 
-class LargeResultsSetPagination(PageNumberPagination):
-    page_size = 5
+class EnhancedPageNumberPagination(PageNumberPagination):
+    page_size = 50
     page_size_query_param = 'page_size'
     max_page_size = 500
 
@@ -62,3 +62,15 @@ class LargeResultsSetPagination(PageNumberPagination):
         response["nextParams"] = self.get_qparams(response, key="nextUrl")
         response["previousParams"] = self.get_qparams(response, key="previousUrl")
         return Response(response)
+
+
+class LargeResultsSetPagination(EnhancedPageNumberPagination):
+    page_size = 500
+
+
+class MediumResultsSetPagination(EnhancedPageNumberPagination):
+    page_size = 250
+
+
+class SmallResultsSetPagination(EnhancedPageNumberPagination):
+    page_size = 25

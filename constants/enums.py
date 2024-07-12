@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Callable
+from typing import Callable, Self
 
 
 # ######
@@ -13,6 +13,14 @@ class EnumChoices(Enum):
     def as_choices(cls, name_transformer: Callable[[str], str] = lambda v: v,
                    value_transformer: Callable[[str], str] = lambda v: v):
         return ((name_transformer(o.value), value_transformer(o.value)) for o in cls)
+
+    @classmethod
+    def from_str(cls, value: str) -> Self:
+        for o in cls:
+            if str(o.value).lower() == value.lower():
+                return o
+
+        raise ValueError(f'"{value}" is not a valid choice')
 
 
 class ContentCategory(EnumChoices):
@@ -37,6 +45,7 @@ class ContentItemType(EnumChoices):
     SINGLE = "Single"
     PLAYLIST = "Playlist"
     NOT_MUSIC = "NotMusic"
+    UNKNOWN = "Unknown"
 
 
 class ContentWatcherSourceType(EnumChoices):
@@ -79,7 +88,7 @@ class ContentWatcherStatus(EnumChoices):
 class VideoQuality(EnumChoices):
     DEFAULT = -1
     Q720 = 720
-    Q10080 = 1080
+    Q1080 = 1080
 
 
 class WatchingType(EnumChoices):
@@ -101,3 +110,67 @@ class WatchingAirStatus(EnumChoices):
     ONGOING = "Ongoing"
     COMPLETED = "Completed"
     UNKNOWN = "Unknown"
+
+
+class ReleaseType(EnumChoices):
+    ALBUM = "Album"
+    COLLAB = "Collab"
+    COMPILATION = "Compilation"
+    EP = "EP"
+    FEAT = "Feat"
+    MISC = "Misc"
+    OTHER = "Other"
+    SINGLE = "Single"
+
+
+class TrackStatus(EnumChoices):
+    NONE = "None"
+    LIKE = "Like"
+    DISLIKE = "Dislike"
+    MISSING = "Missing"
+    DOWNLOADED = "Downloaded"
+    IN_LIBRARY = "In Library"
+
+    @property
+    def value(self) -> str:
+        return super().value
+
+    @classmethod
+    def merge(cls, source: Self, destination: Self) -> Self | None:
+        if source == destination:
+            return destination
+
+        if source == TrackStatus.NONE:
+            return destination
+
+        if source == TrackStatus.DISLIKE:
+            if destination in [TrackStatus.LIKE, TrackStatus.DOWNLOADED, TrackStatus.IN_LIBRARY]:
+                return None
+
+            return source
+
+        if source == TrackStatus.MISSING:
+            if destination == TrackStatus.NONE:
+                return source
+            return destination
+
+        if source == TrackStatus.LIKE:
+            if destination == TrackStatus.DISLIKE:
+                return None
+
+            if destination in [TrackStatus.MISSING, TrackStatus.NONE]:
+                return source
+            return destination
+
+        if source == TrackStatus.DOWNLOADED:
+            if destination == TrackStatus.DISLIKE:
+                return None
+
+            if destination in [TrackStatus.MISSING, TrackStatus.NONE, TrackStatus.LIKE]:
+                return source
+            return destination
+
+        if source == TrackStatus.IN_LIBRARY:
+            if destination == TrackStatus.DISLIKE:
+                return None
+            return source

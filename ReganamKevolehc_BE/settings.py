@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'gaming',
     'listening',
     'contenting',
+    'notes',
 ]
 
 MIDDLEWARE = [

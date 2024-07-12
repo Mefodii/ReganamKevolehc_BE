@@ -14,7 +14,7 @@ CHARS_VARIATIONS = (
 )
 
 DEFAULT_YOUTUBE_WATCH = "https://www.youtube.com/watch?v="
-ALLOWED_VIDEO_QUALITY = [720, 1080]
+ALLOWED_VIDEO_QUALITY = [-1, 720, 1080]
 
 
 class RequestType(Enum):
@@ -27,3 +27,5 @@ class RequestType(Enum):
 
 
 MODEL_LIST_SEPARATOR = ">;<"
+
+TEST_WATCHER_ID = "_testid"

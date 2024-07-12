@@ -1,11 +1,13 @@
 from rest_framework import serializers
 
+from listening.serializers import TrackReadSerializer
 from .models import ContentList, ContentItem, ContentTrack, ContentWatcher, ContentMusicItem
 
 
 class ContentListSerializer(serializers.ModelSerializer):
     content_watcher = serializers.PrimaryKeyRelatedField(many=False, read_only=True)
-    consumed = serializers.BooleanField(source="is_consumed")
+    items_count = serializers.IntegerField(source="get_items_count", read_only=True)
+    consumed = serializers.BooleanField(source="is_consumed", read_only=True)
 
     class Meta:
         model = ContentList
@@ -30,21 +32,25 @@ class ContentItemSerializer(serializers.ModelSerializer):
 
 
 class ContentMusicItemWriteSerializer(serializers.ModelSerializer):
-    consumed = serializers.BooleanField(source="is_consumed")
+    create_default_track = serializers.BooleanField(default=False)
 
     class Meta:
         model = ContentMusicItem
         fields = '__all__'
 
     def update(self, instance: ContentMusicItem, validated_data):
+        # TODO: do not allow to set parsed to true if has any tracks which are not parsed (clean = False, like = None)
         old_position = instance.position
+        old_type = instance.type
+
         res = super().update(instance, validated_data)
-        instance.updated(old_position)
+        instance.updated(old_position, old_type, validated_data['create_default_track'])
         return res
 
     def create(self, validated_data):
+        create_default = validated_data.pop('create_default_track')
         instance: ContentMusicItem = super().create(validated_data)
-        instance.created()
+        instance.created(create_default)
         return instance
 
     def to_representation(self, instance):
@@ -66,9 +72,17 @@ class ContentMusicItemReadSerializer(serializers.ModelSerializer):
 
 
 class ContentTrackReadSerializer(serializers.ModelSerializer):
+    track = serializers.SerializerMethodField()
+
     class Meta:
         model = ContentTrack
         fields = '__all__'
+
+    @staticmethod
+    def get_track(instance: ContentTrack):
+        if instance.track:
+            return TrackReadSerializer(instance.track).data
+        return None
 
 
 class ContentTrackWriteSerializer(serializers.ModelSerializer):

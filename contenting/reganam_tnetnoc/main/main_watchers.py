@@ -1,4 +1,4 @@
-from __future__ import unicode_literals
+from __future__ import unicode_literals, annotations
 
 import time
 
@@ -13,7 +13,6 @@ from contenting.reganam_tnetnoc.watchers.youtube.manager import YoutubeWatchersM
 def __main__():
     watcher_files = [
         paths.YOUTUBE_WATCHERS_PATH,
-        # paths.YOUTUBE_WATCHERS_SILENT_PATH,
         # paths.YOUTUBE_WATCHERS_PGM_PATH,
     ]
 

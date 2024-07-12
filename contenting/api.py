@@ -1,11 +1,12 @@
 from django.http import Http404
 from rest_framework import viewsets, permissions, status
 from rest_framework.exceptions import ValidationError
+from rest_framework.request import Request
 from rest_framework.response import Response
 
 from constants.constants import RequestType
-from utils.drf_utils import MultiSerializerViewSet, LargeResultsSetPagination
-from .models import ContentList, ContentItem, ContentTrack, ContentWatcher, ContentMusicItem, ContentItemQuerySet
+from utils.drf_utils import MultiSerializerViewSet, LargeResultsSetPagination, SmallResultsSetPagination
+from .models import ContentList, ContentItem, ContentTrack, ContentWatcher, ContentMusicItem
 from .serializers import ContentListSerializer, ContentItemSerializer, ContentTrackReadSerializer, \
     ContentWatcherSerializer, ContentMusicItemWriteSerializer, ContentMusicItemReadSerializer, \
     ContentTrackWriteSerializer, ContentWatcherCreateSerializer
@@ -13,6 +14,11 @@ from .serializers import ContentListSerializer, ContentItemSerializer, ContentTr
 QPARAM_CONTENT_LIST = "contentList"
 QPARAM_CONTENT_LIST_PURE = "getCLP"
 QPARAM_HIDE_CONSUMED = "hideConsumed"
+
+
+# TODO: move function somewhere else
+def is_get_list(request: Request, action: str) -> bool:
+    return request.method == "GET" and action == RequestType.LIST
 
 
 class ContentListViewSet(viewsets.ModelViewSet):
@@ -34,14 +40,13 @@ class ContentItemViewSet(viewsets.ModelViewSet):
     pagination_class = LargeResultsSetPagination
 
     def get_queryset(self):
-        objects: ContentItemQuerySet = ContentItem.objects.get_queryset()
         content_list = self.request.query_params.get(QPARAM_CONTENT_LIST, None)
         hide_consumed = self.request.query_params.get(QPARAM_HIDE_CONSUMED, "false") == "true"
 
-        if self.request.method == "GET" and content_list is None:
+        if is_get_list(self.request, self.action) and content_list is None:
             raise ValidationError(f"Missing query param: {QPARAM_CONTENT_LIST}")
 
-        objects = objects.filter_by_content_list(content_list)
+        objects = ContentItem.objects.filter_by_content_list(content_list)
         if hide_consumed:
             objects = objects.filter_not_consumed()
 
@@ -116,19 +121,36 @@ class ContentMusicItemViewSet(MultiSerializerViewSet):
         RequestType.LIST.value: ContentMusicItemReadSerializer,
         RequestType.RETRIEVE.value: ContentMusicItemReadSerializer,
     }
+    pagination_class = SmallResultsSetPagination
 
     def get_queryset(self):
-        objects: ContentItemQuerySet = ContentMusicItem.objects.get_queryset()
+        hide_consumed = self.request.query_params.get(QPARAM_HIDE_CONSUMED, "false") == "true"
         content_list = self.request.query_params.get(QPARAM_CONTENT_LIST, None)
-        return objects.filter_by_content_list(content_list).order_by('position')
+
+        if is_get_list(self.request, self.action) and content_list is None:
+            raise ValidationError(f"Missing query param: {QPARAM_CONTENT_LIST}")
+
+        objects = ContentMusicItem.objects.filter_by_content_list(content_list)
+        if hide_consumed:
+            objects = objects.filter_not_consumed()
+        return objects.order_by('position')
+
+    # noinspection PyMethodMayBeStatic
+    def put(self, request, *args, **kwargs):
+        # TODO: implement
+        pass
+
+    def delete(self, request, *args, **kwargs):
+        # TODO: implement
+        pass
 
     def destroy(self, request, *args, **kwargs):
         data = {}
         try:
             instance: ContentMusicItem = self.get_object()
             instance.deleted()
-            self.perform_destroy(instance)
             data = ContentMusicItemReadSerializer(instance, context=self.get_serializer_context()).data
+            self.perform_destroy(instance)
             response_status = status.HTTP_200_OK
         except Http404:
             response_status = status.HTTP_404_NOT_FOUND
@@ -145,6 +167,10 @@ class ContentTrackViewSet(MultiSerializerViewSet):
         RequestType.LIST.value: ContentTrackReadSerializer,
         RequestType.RETRIEVE.value: ContentTrackReadSerializer,
     }
+    pagination_class = LargeResultsSetPagination
+
+    def get_queryset(self):
+        return self.queryset.order_by("title")
 
     def destroy(self, request, *args, **kwargs):
         data = {}

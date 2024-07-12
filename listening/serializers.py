@@ -15,7 +15,16 @@ class ReleaseSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class TrackSerializer(serializers.ModelSerializer):
+class TrackReadSerializer(serializers.ModelSerializer):
+    full_name = serializers.CharField(source="get_fullname")
+    content_tracks = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+
+    class Meta:
+        model = Track
+        fields = '__all__'
+
+
+class TrackWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Track
         fields = '__all__'

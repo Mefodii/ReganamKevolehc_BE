@@ -58,11 +58,26 @@ def get_yt_video_info():
 
 
 def shift_db():
-    db_file = "E:\\Coding\\Projects\\Kevolehc\\Kevolehc\\youtube\\files\\_db\\ThePrimeThanatos.txt"
-    video_id = "ulARBhWUpA8"
-    # db_utils.move_video_number(db_file, video_id, 1496)
-    # db_utils.shift_number(db_file, 174, -1)
-    db_utils.delete(db_file, [video_id])
+    db_file = r"E:\Tnetnoc\_db\Stradarium.txt"
+    video_id = "DELETEME"
+
+    video_id = "_Aszm-r0F-s"
+    title = "Елена Осокина – Ленинград – Вашингтон: Сталинские продажи шедевров Эрмитажа"
+    channel_name = "Stradarium"
+    published_at = "2023-03-08T11:01:37Z"
+    number = 7
+    file_extension = FileExtension.MKV
+    file_name = "7 - Stradarium - Елена Осокина – Ленинград – Вашингтон_ Сталинские продажи шедевров Эрмитажа"
+    video_quality = None
+    status = "DOWNLOADED"
+    video_type = YoutubeVideo.TYPE_REGULAR
+
+    video = YoutubeVideo(video_id, title, channel_name, published_at, number, save_location=None,
+                         file_extension=file_extension, file_name=file_name, video_quality=video_quality,
+                         status=status, video_type=video_type)
+    db_utils.insert(db_file, [video])
+    # db_utils.shift(db_file, 7, 1)
+    # db_utils.delete(db_file, [video_id])
 
 
 def shift_playlist():
@@ -74,9 +89,9 @@ def shift_playlist():
 
 
 def sync_media():
-    watcher_name = "ThePrimeThanatos"
-    ext = FileExtension.MP3
-    db_file = f"E:\\Coding\\Projects\\Kevolehc\\Kevolehc\\youtube\\files\\_db\\{watcher_name}.txt"
+    watcher_name = "Stradarium"
+    ext = FileExtension.MKV
+    db_file = r"E:\Tnetnoc\_db\Stradarium.txt"
     media_paths = [
         WATCHERS_DOWNLOAD_PATH + "\\" + watcher_name,
         FILES_AUDIO_ARCHIVE_PATH + "\\" + watcher_name,
@@ -143,7 +158,7 @@ def __main__():
     # get_channel_id()
     # sync_media()
     # get_yt_video_info()
-    ytdl_get_info()
+    # ytdl_get_info()
     # test_date_diff()
     pass
 

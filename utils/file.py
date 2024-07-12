@@ -88,7 +88,7 @@ def read(file_name: str, encoding: str = None) -> list[str]:
     data = []
     with codecs.open(file_name, 'r', encoding) as input_file:
         for input_line in input_file:
-            data.append(input_line.replace("\n", ""))
+            data.append(input_line.replace("\n", "").replace("\r", ""))
     return data
 
 
@@ -241,3 +241,35 @@ def list_dirs(path: str) -> list[str]:
     :return:
     """
     return [join(path, f) for f in listdir(path) if isdir(join(path, f))]
+
+
+def files_content_equal(f1, f2, ignore_len: bool = False) -> bool:
+    """
+    read and compare the content of 2 files
+    :param f1:
+    :param f2:
+    :param ignore_len:
+    :return:
+    """
+    f1_data = read(f1, encoding=ENCODING_UTF8)
+    f2_data = read(f2, encoding=ENCODING_UTF8)
+
+    if ignore_len:
+        if len(f1_data) < len(f2_data):
+            f1_data, f2_data = f2_data, f1_data
+    else:
+        if len(f1_data) != len(f2_data):
+            print(f"Files length not equal. F1: {f1}. F2: {f2}")
+            return False
+
+    for i in range(len(f1_data)):
+        if f1_data[i] != f2_data[i]:
+            print(f"Lines not equal. Line: {i + 1}. F1: {f1}. F2: {f2}")
+            print(f1_data[i])
+            return False
+
+    if ignore_len and len(f1_data) != len(f2_data):
+        print(f"Files length not equal. F1: {f1}. F2: {f2}")
+        return False
+
+    return True

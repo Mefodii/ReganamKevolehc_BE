@@ -4,7 +4,9 @@ from django.core.management.base import BaseCommand
 from django.db import models
 from django.db.models import QuerySet
 
-from contenting.models import ContentTrack, ContentMusicItem
+from commands.management.commands.run_watcher_import import RELAX_N_LISTEN_LIST
+from constants.enums import TrackStatus
+from contenting.models import ContentTrack, ContentMusicItem, ContentList
 from listening.models import Track, Artist, ReleaseTrack, Release
 from utils import file
 
@@ -105,6 +107,32 @@ def clean_dead_music():
     Artist.clean_dead()
 
 
+def change_in_lib_to_downloaded():
+    def is_in_lib(t: Track) -> bool:
+        for content_track in t.content_tracks.all():
+            content_track: ContentTrack
+            if content_track.content_item.content_list.name == RELAX_N_LISTEN_LIST:
+                return True
+        return False
+
+    lib_list = None
+    for cl in ContentList.objects.all():
+        if cl.name == RELAX_N_LISTEN_LIST:
+            lib_list = cl
+            break
+
+    if lib_list is None:
+        raise ValueError(f"Failed to find content list: {RELAX_N_LISTEN_LIST}")
+
+    tracks = Track.objects.all()
+
+    for track in tracks:
+        status = TrackStatus.from_str(track.status)
+        if status == TrackStatus.IN_LIBRARY and not is_in_lib(track):
+            track.status = TrackStatus.DOWNLOADED.value
+            track.save()
+
+
 class Command(BaseCommand):
     def handle(self, **options):
         pass
@@ -116,14 +144,17 @@ class Command(BaseCommand):
         #         print(item.id, i, item.position, item.title)
         #         break
 
-        tracks = Track.objects.filter(is_clean=True)
-        for track in tracks:
-            track.double_checked = False
-            track.save()
+        # tracks = Track.objects.filter(title__icontains="ice of Autum")
+        # for track in tracks:
+        #     print(track)
+
+        # tracks = Track.objects.filter(title="Music Is Mine")
+        # for track in tracks:
+        #     print(track)
 
         # debug_import()
         # clean_dead_music()
         # print_dead_tracks()
-        # print_counts()
+        print_counts()
         # clean_music()
         # __main__()

@@ -4,7 +4,6 @@ from typing import Tuple
 import pytz
 from django.core.management.base import BaseCommand
 
-from constants import paths
 from constants.enums import ContentCategory, DownloadStatus, ContentWatcherSourceType, ContentWatcherStatus, \
     ContentItemType, VideoQuality, TrackStatus
 from constants.enums import FileExtension
@@ -448,8 +447,7 @@ def import_watcher(watcher: YoutubeWatcher) -> ContentWatcher:
     return content_watcher
 
 
-def import_watchers():
-    watchers_file = paths.YOUTUBE_WATCHERS_PATH
+def import_watchers(watchers_file: str):
     watchers: list[YoutubeWatcher] = YoutubeWatcher.from_file(watchers_file)
     for watcher in watchers:
         import_watcher(watcher)
@@ -527,8 +525,8 @@ def import_list():
         list_name = f.get_plain_name()
         file_path = f.get_abs_path()
 
-        # if list_name == "Relax'n'Listen (frozen)":
-        #     continue
+        if list_name != "Пропанк":
+            continue
 
         item_list = PlaylistItemList.from_file(file_path, is_watcher=False)
         dl_pos = item_list.downloaded_position
@@ -575,11 +573,47 @@ def reassign_to_clean_tracks():
             clean_track.merge(track)
 
 
+def check_lib_similar_tracks():
+    file_path = r"E:\Google Drive\Mu\plist\otherlists\Relax'n'Listen (frozen).txt"
+    list_name = RELAX_N_LISTEN_LIST
+    item_list = PlaylistItemList.from_file(file_path, is_watcher=False)
+
+    global current_imported_list
+    current_imported_list = list_name
+    for playlist_item in item_list.items:
+        if playlist_item.is_dummy:
+            continue
+
+        artists, title = split_track(normalize_text(playlist_item.title))
+
+        artist_objects = []
+        for artist_name in artists:
+            artist_name = artist_name.strip()
+            artist = Artist.objects.get(name=artist_name)
+            artist_objects.append(artist)
+
+        original_track = Track.objects.filter_exact_artists(artist_objects).get(title=title)
+        tracks = Track.objects.filter_exact_artists(artist_objects).filter(title__iexact=title)
+        if len(tracks) == 0:
+            raise Track.DoesNotExist()
+        elif len(tracks) == 1:
+            continue
+        else:
+            print(original_track)
+            for track in tracks:
+                if track.id == original_track.id:
+                    continue
+
+                print("------   " + str(track))
+
+
 class Command(BaseCommand):
     def handle(self, **options):
         pass
-        import_list()
-        import_watchers()
-        import_chilledcat()
-        import_artist()
-        reassign_to_clean_tracks()
+        # check_lib_similar_tracks()
+        # import_list()
+        # import_watchers(paths.YOUTUBE_WATCHERS_PATH)
+        # import_watchers(paths.YOUTUBE_WATCHERS_PGM_PATH)
+        # import_chilledcat()
+        # import_artist()
+        # reassign_to_clean_tracks()

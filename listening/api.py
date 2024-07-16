@@ -5,6 +5,9 @@ from utils.drf_utils import MultiSerializerViewSet, MediumResultsSetPagination
 from .models import Artist, Release, Track
 from .serializers import ArtistSerializer, ReleaseSerializer, TrackReadSerializer, TrackWriteSerializer
 
+QPARAM_TRACK_SEARCH = "trackSearch"
+QPARAM_SEARCH_CASE_SENSITIVE = "caseSensitive"
+
 
 class ArtistViewSet(viewsets.ModelViewSet):
     queryset = Artist.objects.all()
@@ -34,7 +37,12 @@ class TrackViewSet(MultiSerializerViewSet):
     }
     pagination_class = MediumResultsSetPagination
 
-    # TODO: get tracks by artistid
-
     def get_queryset(self):
-        return self.queryset.order_by("id")
+        objects = Track.objects.all()
+
+        case_sensitive = self.request.query_params.get(QPARAM_SEARCH_CASE_SENSITIVE, "false") == "true"
+        track_search = self.request.query_params.get(QPARAM_TRACK_SEARCH, "")
+        if track_search:
+            objects = objects.filter_fullname_contains(track_search, case_sensitive)
+
+        return objects.order_by('id')

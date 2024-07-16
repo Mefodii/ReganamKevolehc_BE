@@ -18,16 +18,13 @@ def run_imported_watchers():
         if watcher.watcher_id.startswith(TEST_WATCHER_ID):
             continue
 
-        if watcher.watcher_id != "UCGRB1ZjIqAiaGwt-XLq9CnA":
-            continue
-
         manager = YoutubeWatcherDjangoManager(worker, watcher, log_file=paths.YOUTUBE_API_LOG)
         manager.run_updates()
 
 
 def run_json_watchers():
     watcher_files = [
-        paths.YOUTUBE_WATCHERS_PATH,
+        # paths.YOUTUBE_WATCHERS_PATH,
         # paths.YOUTUBE_WATCHERS_PGM_PATH,
     ]
 

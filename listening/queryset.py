@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Self, TYPE_CHECKING
 
-from django.db.models import Count
+from django.db.models import Count, Q
 
 from utils.model_utils import TypedQuerySet
 
@@ -16,7 +16,7 @@ class ArtistQuerySet(TypedQuerySet):
         return self.filter(tracks__isnull=True, feats__isnull=True, remixes__isnull=True, covers__isnull=True)
 
     def find_name_and_alias(self, name: str, ignore_case: bool) -> Artist | None:
-        # TODO: lookup for artist with giver name or if in alias
+        # TODO: lookup for artist with given name or if in alias
         pass
 
 
@@ -47,6 +47,29 @@ class TrackQuerySet(ExactArtistQuerySet):
 
     def filter_dcheck_dead(self) -> Self:
         return self.filter_dead().filter(double_checked=False)
+
+    def filter_fullname_contains(self, value: str, case_sensitive: bool = False) -> Self:
+        lookup_type = "contains" if case_sensitive else "icontains"
+
+        filters = (
+                Q(**{f"title__{lookup_type}": value}) |
+                Q(**{f"display_title__{lookup_type}": value}) |
+                Q(**{f"alias__{lookup_type}": value}) |
+                Q(**{f"artists__name__{lookup_type}": value}) |
+                Q(**{f"artists__display_name__{lookup_type}": value}) |
+                Q(**{f"artists__alias__{lookup_type}": value}) |
+                Q(**{f"feat__name__{lookup_type}": value}) |
+                Q(**{f"feat__display_name__{lookup_type}": value}) |
+                Q(**{f"feat__alias__{lookup_type}": value}) |
+                Q(**{f"remix__name__{lookup_type}": value}) |
+                Q(**{f"remix__display_name__{lookup_type}": value}) |
+                Q(**{f"remix__alias__{lookup_type}": value}) |
+                Q(**{f"cover__name__{lookup_type}": value}) |
+                Q(**{f"cover__display_name__{lookup_type}": value}) |
+                Q(**{f"cover__alias__{lookup_type}": value})
+        )
+
+        return self.filter(filters)
 
 
 class ReleaseTrackQuerySet(TypedQuerySet):

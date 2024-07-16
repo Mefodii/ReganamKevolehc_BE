@@ -15,8 +15,8 @@ DISLIKE = "-"
 DUPLICATE = "L"
 UNKNOWN_RELEASE = "?"
 
-IN_LIB_SEP = " ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
-DOWNLOADED_SEP = ' """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""'
+DOWNLOADED_SEP = " ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
+IN_LIB_SEP = ' """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""'
 
 
 def is_like(flag: str) -> bool:
@@ -322,7 +322,7 @@ class PlaylistItemList:
     def __init__(self, data: list[PlaylistItem], is_watcher: bool = True):
         self.is_watcher = is_watcher
         self.downloaded_position = 0
-        self.in_lib_position = 0
+        self.in_lib_position = -1
         self.items = data
 
         for item in self.items:
@@ -332,7 +332,8 @@ class PlaylistItemList:
             if IN_LIB_SEP in "".join(item.children):
                 self.in_lib_position = 0 if item.is_dummy else item.number
 
-        self.in_lib_position = max(self.downloaded_position, self.in_lib_position)
+        if self.in_lib_position == -1:
+            self.in_lib_position = self.downloaded_position
 
     def find_artist(self) -> str | None:
         return self.find_in_artist("-> Name: ")

@@ -41,8 +41,9 @@ class YoutubeWatcherDjangoManager:
                 print(message)
 
     def run_updates(self) -> None:
-        if self.watcher.status in (ContentWatcherStatus.DEAD.value, ContentWatcherStatus.NONE.value):
-            raise ValueError(f"Invalid status for watcher: {str(self.watcher)}")
+        if self.watcher.status in (ContentWatcherStatus.DEAD.value, ContentWatcherStatus.NONE.value,
+                                   ContentWatcherStatus.IGNORE.value):
+            return
 
         try:
             self.watcher.status = ContentWatcherStatus.RUNNING.value

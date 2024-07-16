@@ -91,9 +91,17 @@ WSGI_APPLICATION = 'ReganamKevolehc_BE.wsgi.application'
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 
 DATABASES = {
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.sqlite3',
+    #     'NAME': DB_SQLITE_MAIN_PATH,
+    # }
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': DB_SQLITE_MAIN_PATH,
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'KevolehcDB',
+        'USER': 'postgres',
+        'PASSWORD': 'admin',
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
 

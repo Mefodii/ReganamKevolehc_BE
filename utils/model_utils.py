@@ -37,3 +37,6 @@ def reorder(instance: models.Model, old_order: int | None, new_order: int | None
 class TypedQuerySet(models.QuerySet):
     def filter(self, *args, **kwargs) -> Self:
         return super().filter(*args, **kwargs)
+
+    def all(self) -> Self:
+        return super().all()

@@ -3,7 +3,12 @@ import os
 import shutil
 
 from django.core.management.base import BaseCommand
+from import_export.resources import ModelResource
 
+from contenting.resources import ContentListResource, ContentWatcherResource, ContentItemResource, \
+    ContentMusicItemResource, ContentTrackResource
+from listening.resources import ArtistResource, TrackResource, ReleaseTrackResource, ReleaseResource
+from notes.resources import NoteResource
 from utils import file
 from watching.resources import GroupResource, VideoResource, ImageModelResource
 
@@ -24,21 +29,36 @@ def copy_media(backup_path):
     shutil.copytree(media_dir, backup_path + "\\media")
 
 
-def export_resource(resource, export_name):
+def export_resource(resource: ModelResource, export_name):
     dataset = resource.export()
     json_file = export_name + ".json"
     csv_file = export_name + ".csv"
 
-    file.write(json_file, [str(dataset.json)], encoding=file.ENCODING_UTF8)
+    file.write_json(json_file, dataset.json)
     file.write(csv_file, [str(dataset.csv)], encoding=file.ENCODING_UTF8)
 
 
+# noinspection DuplicatedCode
 def backup_tables():
     today = str(datetime.date.today())
     resources = [
+        # Watching
         [GroupResource(), "Group - " + today],
         [VideoResource(), "Video - " + today],
         [ImageModelResource(), "Image - " + today],
+        # Note
+        [NoteResource(), "Note - " + today],
+        # Listening
+        [ArtistResource(), "Artist - " + today],
+        [TrackResource(), "Track - " + today],
+        [ReleaseTrackResource(), "ReleaseTrack - " + today],
+        [ReleaseResource(), "Release - " + today],
+        # Contenting
+        [ContentListResource(), "ContentList - " + today],
+        [ContentWatcherResource(), "ContentWatcher - " + today],
+        [ContentItemResource(), "ContentItem - " + today],
+        [ContentMusicItemResource(), "ContentMusicItem - " + today],
+        [ContentTrackResource(), "ContentTrack - " + today],
     ]
 
     res_len = len(resources)

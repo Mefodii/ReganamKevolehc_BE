@@ -82,7 +82,12 @@ class ContentWatcherStatus(EnumChoices):
     WARNING = "Warning"
     ERROR = "Error"
     DEAD = "Dead"
+    IGNORE = "Ignore"
     NONE = "None"
+
+    @property
+    def value(self) -> str:
+        return super().value
 
 
 class VideoQuality(EnumChoices):

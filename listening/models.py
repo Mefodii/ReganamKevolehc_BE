@@ -40,6 +40,10 @@ class Artist(models.Model):
 
     objects: ArtistQuerySet[Artist] = ArtistQuerySet.as_manager()
 
+    def merge(self, source: Artist):
+        # TODO: replace references of the source artist with self (create a Note object), then delete source object
+        pass
+
     @staticmethod
     def clean_dead():
         objs = Artist.objects.filter_dead()

@@ -102,7 +102,7 @@ def read_json(file_path: str) -> dict:
         return json.load(json_file)
 
 
-def write_json(output_path: str, data: dict | list) -> None:
+def write_json(output_path: str, data: dict | list | str) -> None:
     """
     Dumbs data to the output file in a json format.
 

@@ -7,7 +7,7 @@ from django.db.models import QuerySet
 from commands.management.commands.run_watcher_import import RELAX_N_LISTEN_LIST
 from constants.enums import TrackStatus
 from contenting.models import ContentTrack, ContentMusicItem, ContentList
-from listening.models import Track, Artist, ReleaseTrack, Release
+from listening.models import Track, Artist, ReleaseTrack, Release, ReleaseArtists
 from utils import file
 
 
@@ -133,6 +133,16 @@ def change_in_lib_to_downloaded():
             track.save()
 
 
+def assign_release_artist():
+    releases = Release.objects.all()
+    for release in releases:
+        position = 1
+        release.artists2.clear()
+        for artist in release.artists.all():
+            ReleaseArtists.objects.create(release=release, artist=artist, position=position)
+            position += 1
+
+
 class Command(BaseCommand):
     def handle(self, **options):
         pass
@@ -148,13 +158,11 @@ class Command(BaseCommand):
         # for track in tracks:
         #     print(track)
 
-        # tracks = Track.objects.filter(title="Music Is Mine")
-        # for track in tracks:
-        #     print(track)
+        assign_release_artist()
 
         # debug_import()
         # clean_dead_music()
         # print_dead_tracks()
-        print_counts()
+        # print_counts()
         # clean_music()
         # __main__()

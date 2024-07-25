@@ -12,13 +12,13 @@ from contenting.queryset import ContentItemQuerySet, ContentMusicItemQuerySet, C
     ContentWatcherQuerySet
 from listening.models import Track
 from utils.datetime_utils import default_datetime
-from utils.model_utils import reorder
+from utils.model_utils import PositionedModel
 
 
 class ContentList(models.Model):
     content_items: ContentItemQuerySet
     content_music_items: ContentMusicItemQuerySet
-    content_watcher: ContentWatcher
+    content_watcher: ContentWatcher | None
 
     name = models.CharField(max_length=200)
     category = models.CharField(max_length=50, choices=ContentCategory.as_choices())
@@ -48,14 +48,15 @@ class ContentList(models.Model):
         return f'<{self.id}> {self.name}'
 
 
-class ContentItemAbstract(models.Model):
+class ContentItemAbstract(PositionedModel):
     item_id = models.CharField(max_length=100, blank=True)
     url = models.CharField(max_length=500, blank=True)
     title = models.CharField(max_length=500)
     file_name = models.CharField(max_length=500, blank=True)
-    position = models.IntegerField(validators=[MinValueValidator(1)])
     download_status = models.CharField(max_length=50, choices=DownloadStatus.as_choices())
     published_at = models.DateTimeField()
+
+    # TODO: probably dont need content_music_items, both can be under abstract class
 
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
@@ -65,29 +66,19 @@ class ContentItemAbstract(models.Model):
 
 
 class ContentItem(ContentItemAbstract):
+    parent_name = "content_list"
+
     consumed = models.BooleanField()
     content_list = models.ForeignKey(ContentList, related_name="content_items", on_delete=models.CASCADE)
 
     objects: ContentItemQuerySet[ContentItem] = ContentItemQuerySet.as_manager()
-
-    def reorder(self, old_position, new_position):
-        reorder(self, old_position, new_position, "position", "content_list")
-
-    def updated(self, old_position):
-        if self.position != old_position:
-            self.reorder(old_position, self.position)
-
-    def created(self):
-        self.reorder(None, self.position)
-
-    def deleted(self):
-        self.reorder(self.position, None)
 
     def __str__(self):
         return f'{str(self.content_list)} | <{self.id}> {self.title} - {self.position}'
 
 
 class ContentMusicItem(ContentItemAbstract):
+    parent_name = "content_list"
     tracks: QuerySet[ContentTrack]
 
     type = models.CharField(max_length=50, choices=ContentItemType.as_choices())
@@ -102,39 +93,42 @@ class ContentMusicItem(ContentItemAbstract):
                                                Q(tracks__track__like__isnull=True)).exists()
         return tracks_parsed and self.parsed
 
-    def reorder(self, old_position: int | None, new_position: int | None):
-        reorder(self, old_position, new_position, "position", "content_list")
+    def updated(self, **kwargs):
+        super().updated(**kwargs)
 
-    def updated(self, old_position: int, old_type: str, default_track: bool):
-        if self.position != old_position:
-            self.reorder(old_position, self.position)
-
+        old_type: str = kwargs["old_type"]
+        single_track: int | None = kwargs["single_track"]
         if self.type != old_type:
             if old_type == ContentItemType.PLAYLIST.value or old_type == ContentItemType.SINGLE.value:
                 self.tracks.all().delete()
 
-            if self.type == ContentItemType.SINGLE.value and default_track:
-                self.generate_default_track()
+            if self.type == ContentItemType.SINGLE.value:
+                self.init_type_single(single_track)
+        elif self.type == ContentItemType.SINGLE.value:
+            # TODO: check if need to change / update the track
+            pass
 
-    def created(self, default_track: bool):
-        self.reorder(None, self.position)
-        if default_track:
-            self.generate_default_track()
+    def created(self, **kwargs):
+        single_track: int | None = kwargs["single_track"]
+        super().created()
+        if self.type == ContentItemType.SINGLE.value:
+            self.init_type_single(single_track)
 
-    def generate_default_track(self):
-        track = Track.get_or_create_default(self.title)
-        ContentTrack.create_default_track(self, track)
-
-    def deleted(self):
-        self.reorder(self.position, None)
+    def init_type_single(self, single_track: int | None):
+        if single_track:
+            track = Track.objects.get(pk=single_track)
+        else:
+            track = Track.get_or_create_default(self.title)
+        ContentTrack.create_for_single(self, track)
 
     def __str__(self):
         return f'{str(self.content_list)} | <{self.id}> {self.title} - {self.position}'
 
 
-class ContentTrack(models.Model):
+class ContentTrack(PositionedModel):
+    parent_name = "content_item"
+
     title = models.CharField(max_length=300)
-    position = models.IntegerField(validators=[MinValueValidator(1)])
     start_time = models.IntegerField(default=None, validators=[MinValueValidator(0)], blank=True, null=True)
     # Note: dunno if duration needed, maybe should be removed
     duration = models.IntegerField(default=None, validators=[MinValueValidator(0)], blank=True, null=True)
@@ -149,13 +143,13 @@ class ContentTrack(models.Model):
     modified_at = models.DateTimeField(auto_now=True)
 
     @classmethod
-    def create_default_track(cls, content_item: ContentMusicItem, track: Track) -> Self:
+    def create_for_single(cls, content_item: ContentMusicItem, track: Track) -> Self:
         if content_item.tracks.exists():
             raise ValueError(f"Cannot create default track, item already has tracks: {content_item}")
 
         content_track = ContentTrack()
 
-        content_track.title = content_item.title
+        content_track.title = track.get_fullname()
         content_track.content_item = content_item
         content_track.needs_edit = False
         content_track.track = track
@@ -168,19 +162,6 @@ class ContentTrack(models.Model):
 
     def __str__(self):
         return f'{str(self.content_item)} | <{self.id}> {self.title} - {self.position}'
-
-    def reorder(self, old_position: int | None, new_position: int | None):
-        reorder(self, old_position, new_position, "position", "content_item")
-
-    def updated(self, old_position: int):
-        if self.position != old_position:
-            self.reorder(old_position, self.position)
-
-    def created(self):
-        self.reorder(None, self.position)
-
-    def deleted(self):
-        self.reorder(self.position, None)
 
 
 class ContentWatcher(models.Model):

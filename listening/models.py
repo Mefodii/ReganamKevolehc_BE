@@ -1,14 +1,15 @@
 from __future__ import annotations
 
+from itertools import zip_longest
 from typing import TYPE_CHECKING, Self
 
-from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import QuerySet
 
+from constants.constants import MODEL_LIST_SEPARATOR
 from constants.enums import ReleaseType, TrackStatus
 from utils.datetime_utils import default_datetime
-from utils.model_utils import reorder
+from utils.model_utils import PositionedModel
 
 if TYPE_CHECKING:
     from contenting.models import ContentTrack
@@ -28,8 +29,7 @@ class Artist(models.Model):
     covers: QuerySet[Track]
     releases: QuerySet[Release]
 
-    name = models.CharField(max_length=200)
-    display_name = models.CharField(default="", max_length=200, blank=True, null=True)
+    name = models.CharField(max_length=200, unique=True)
     alias = models.CharField(max_length=500, blank=True)
     monitoring = models.BooleanField(default=False)
     check_date = models.DateTimeField(default=default_datetime())
@@ -39,6 +39,15 @@ class Artist(models.Model):
     modified_at = models.DateTimeField(auto_now=True)
 
     objects: ArtistQuerySet[Artist] = ArtistQuerySet.as_manager()
+
+    def get_aliases(self):
+        if self.alias:
+            return self.alias.split(MODEL_LIST_SEPARATOR)
+        return []
+
+    @staticmethod
+    def build_alias(aliases):
+        return MODEL_LIST_SEPARATOR.join(aliases)
 
     def merge(self, source: Artist):
         # TODO: replace references of the source artist with self (create a Note object), then delete source object
@@ -53,28 +62,12 @@ class Artist(models.Model):
     def save(self, *args, **kwargs):
         if self.name:
             self.name = normalize_text(self.name)
-        if self.display_name:
-            self.display_name = normalize_text(self.display_name)
         if self.alias:
             self.alias = normalize_text(self.alias)
         super().save(*args, **kwargs)
 
-    def get_displayable_name(self):
-        if self.display_name:
-            return f"{self.name} ({self.display_name})"
-        return self.name
-
-    def get_aliases(self):
-        if self.alias:
-            return self.alias.split(ALIAS_SEPARATOR)
-        return []
-
-    @staticmethod
-    def build_alias(aliases: list[str]):
-        return ALIAS_SEPARATOR.join(aliases)
-
     def __str__(self):
-        return f"<{self.id}> {self.get_displayable_name()}"
+        return f"<{self.id}> {self.name}"
 
     def __repr__(self):
         return str(self)
@@ -84,13 +77,12 @@ class Release(models.Model):
     tracks: QuerySet[ReleaseTrack]
 
     name = models.CharField(max_length=300)
-    display_name = models.CharField(default="", max_length=300, blank=True, null=True)
     type = models.CharField(default=ReleaseType.OTHER.value, max_length=50, choices=ReleaseType.as_choices())
     published_at = models.DateField(null=True, blank=True)
 
     unknown_playlist = models.BooleanField(default=False)
 
-    artists = models.ManyToManyField(Artist, related_name="releases")
+    artists = models.ManyToManyField(Artist, related_name="releases", through="ReleaseArtists")
 
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
@@ -105,20 +97,19 @@ class Release(models.Model):
     def save(self, *args, **kwargs):
         if self.name:
             self.name = normalize_text(self.name)
-        if self.display_name:
-            self.display_name = normalize_text(self.display_name)
         super().save(*args, **kwargs)
 
-    def get_displayable_name(self):
-        if self.display_name:
-            return f"{self.name} ({self.display_name})"
-        return self.name
-
     def __str__(self):
-        return self.get_displayable_name()
+        return self.name
 
     def __repr__(self):
         return str(self)
+
+
+class ReleaseArtists(PositionedModel):
+    parent_name = "track"
+    release = models.ForeignKey(Release, on_delete=models.CASCADE)
+    artist = models.ForeignKey(Artist, on_delete=models.CASCADE)
 
 
 class Track(models.Model):
@@ -126,13 +117,11 @@ class Track(models.Model):
     release_tracks: ReleaseTrackQuerySet[ReleaseTrack]
 
     title = models.CharField(max_length=200)
-    display_title = models.CharField(default="", max_length=200, blank=True, null=True)
     alias = models.CharField(max_length=500, blank=True)
-    artists = models.ManyToManyField(Artist, related_name="tracks")
-
-    feat = models.ManyToManyField(Artist, related_name="feats")
-    remix = models.ManyToManyField(Artist, related_name="remixes")
-    cover = models.ManyToManyField(Artist, related_name="covers")
+    artists = models.ManyToManyField(Artist, related_name="tracks", through="TrackArtists")
+    feat = models.ManyToManyField(Artist, related_name="feats", through="TrackFeat")
+    remix = models.ManyToManyField(Artist, related_name="remixes", through="TrackRemix")
+    cover = models.ManyToManyField(Artist, related_name="covers", through="TrackCover")
 
     #      |-> DISLIKE
     # NONE |-> MISSING
@@ -148,6 +137,15 @@ class Track(models.Model):
     modified_at = models.DateTimeField(auto_now=True)
 
     objects: TrackQuerySet[Track] = TrackQuerySet.as_manager()
+
+    def get_aliases(self):
+        if self.alias:
+            return self.alias.split(MODEL_LIST_SEPARATOR)
+        return []
+
+    @staticmethod
+    def build_alias(aliases):
+        return MODEL_LIST_SEPARATOR.join(aliases)
 
     @staticmethod
     def clean_dead():
@@ -220,31 +218,24 @@ class Track(models.Model):
     def save(self, *args, **kwargs):
         if self.title:
             self.title = normalize_text(self.title)
-        if self.display_title:
-            self.display_title = normalize_text(self.display_title)
         if self.alias:
             self.alias = normalize_text(self.alias)
 
         super().save(*args, **kwargs)
 
-    def get_displayable_title(self):
-        if self.display_title:
-            return f"{self.title} ({self.display_title})"
-        return self.title
-
     def get_fulltitle(self) -> str:
-        fulltitle = self.get_displayable_title()
+        fulltitle = self.title
         if self.feat.exists():
             feat: Artist
-            feats = FEAT_SEPARATOR.join([feat.get_displayable_name() for feat in self.feat.all()])
+            feats = FEAT_SEPARATOR.join([m2m.artist.name for m2m in self.trackfeat_set.all().order_by("position")])
             fulltitle += f" [Feat. {feats}]"
         if self.remix.exists():
             remix: Artist
-            remixes = FEAT_SEPARATOR.join([remix.get_displayable_name() for remix in self.remix.all()])
+            remixes = FEAT_SEPARATOR.join([m2m.artist.name for m2m in self.trackremix_set.all().order_by("position")])
             fulltitle += f" (Remix by {remixes})"
         if self.cover.exists():
             cover: Artist
-            covers = FEAT_SEPARATOR.join([cover.get_displayable_name() for cover in self.cover.all()])
+            covers = FEAT_SEPARATOR.join([m2m.artist.name for m2m in self.trackcover_set.all().order_by("position")])
             fulltitle += f" (Cover {covers})"
 
         return fulltitle
@@ -256,23 +247,15 @@ class Track(models.Model):
         artist: Artist
         fullname = ""
         if self.artists.exists():  # It is possible to have no artists
-            fullname += ARTIST_SEPARATOR.join([artist.get_displayable_name() for artist in self.artists.all()]) + " - "
+            fullname += ARTIST_SEPARATOR.join(
+                [m2m.artist.name for m2m in self.trackartists_set.all().order_by("position")]) + " - "
         fullname += self.get_fulltitle()
         return fullname
-
-    def get_aliases(self):
-        if self.alias:
-            return self.alias.split(ALIAS_SEPARATOR)
-        return []
-
-    @staticmethod
-    def build_alias(aliases):
-        return ALIAS_SEPARATOR.join(aliases)
 
     def __str__(self):
         s = f"<{self.id}>: "
         if self.id is None:
-            return s + self.get_displayable_title() + ": " + self.status
+            return s + self.title + ": " + self.status
 
         return s + self.get_fullname() + ": " + self.status
 
@@ -280,8 +263,69 @@ class Track(models.Model):
         return str(self)
 
 
-class ReleaseTrack(models.Model):
-    position = models.IntegerField(validators=[MinValueValidator(1)])
+class TrackArtistM2MAbstract(PositionedModel):
+    parent_name = "track"
+    track = models.ForeignKey(Track, on_delete=models.CASCADE)
+    artist = models.ForeignKey(Artist, on_delete=models.CASCADE)
+
+    class Meta:
+        abstract = True
+
+    @classmethod
+    def sync_relations(cls, track: Track, relations_name: str,
+                       new_relations: list[Artist] | ArtistQuerySet[Artist]) -> bool:
+        old_relations: list[Self] = getattr(track, relations_name).all().order_by("position")
+        changed: bool = False
+        zipped = zip_longest(old_relations, new_relations, fillvalue=None)
+        for position, (m2m, artist) in enumerate(zipped, start=1):
+            m2m: Self | None
+            artist: Artist | None
+
+            if m2m is None:
+                cls.objects.create(track=track, artist=artist, position=position)
+                changed = True
+            elif artist is None:
+                m2m.delete()
+                changed = True
+            else:
+                if m2m.artist.id == artist.id:
+                    continue
+
+                if m2m.position != position:
+                    raise ValueError(f"Position mismatch. Has {m2m.position}. Got: {position}. Relation: {m2m}")
+
+                m2m.artist = artist
+                m2m.save()
+                changed = True
+
+        return changed
+
+    def __str__(self):
+        return f'<{self.id}> {self.position} - {self.track} - {self.artist}'
+
+    def __repr__(self):
+        return str(self)
+
+
+class TrackArtists(TrackArtistM2MAbstract):
+    pass
+
+
+class TrackFeat(TrackArtistM2MAbstract):
+    pass
+
+
+class TrackRemix(TrackArtistM2MAbstract):
+    pass
+
+
+class TrackCover(TrackArtistM2MAbstract):
+    pass
+
+
+class ReleaseTrack(PositionedModel):
+    parent_name = "release"
+
     comment = models.CharField(default="", max_length=200, blank=True, null=True)
     needs_edit = models.BooleanField(default=False)
 
@@ -297,17 +341,3 @@ class ReleaseTrack(models.Model):
     def clean_dead():
         objs = ReleaseTrack.objects.filter_dead()
         objs.delete()
-
-    # TODO: probably can define a class with these 4 functions, then this class will have to define field  / parent
-    def reorder(self, old_position: int | None, new_position: int | None):
-        reorder(self, old_position, new_position, "position", "release")
-
-    def updated(self, old_position: int):
-        if self.position != old_position:
-            self.reorder(old_position, self.position)
-
-    def created(self):
-        self.reorder(None, self.position)
-
-    def deleted(self):
-        self.reorder(self.position, None)

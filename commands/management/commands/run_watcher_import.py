@@ -12,7 +12,7 @@ from contenting.reganam_tnetnoc.model.playlist_item import PlaylistItem, Playlis
 from contenting.reganam_tnetnoc.watchers.youtube.media import YoutubeVideo
 from contenting.reganam_tnetnoc.watchers.youtube.watcher import YoutubeWatcher
 from contenting.serializers import ContentWatcherCreateSerializer, ContentListSerializer
-from listening.models import Track, Artist, Release, ReleaseTrack
+from listening.models import Track, Artist, Release, ReleaseTrack, TrackArtists, ReleaseArtists
 from listening.queryset import ReleaseQuerySet, ReleaseTrackQuerySet, TrackQuerySet
 from utils import datetime_utils, file
 from utils.datetime_utils import utcnow
@@ -241,7 +241,8 @@ def get_or_create_track(playlist_item: PlaylistItem | PlaylistChildItem, downloa
 
     track.save()
     if artist_objects:
-        track.artists.set(artist_objects)
+        for i, artist in enumerate(artist_objects, start=1):
+            TrackArtists.objects.create(artist=artist, track=track, position=i)
 
     return track
 
@@ -361,7 +362,8 @@ def get_or_create_release(artists: list[Artist], name: str, year: int | None, re
         release.published_at = datetime.datetime(year=year, month=1, day=1, tzinfo=pytz.UTC)
 
     release.save()
-    release.artists.set(artists)
+    for i, artist in enumerate(artists, start=1):
+        ReleaseArtists.objects.create(artist=artist, release=release, position=i)
 
     return release
 

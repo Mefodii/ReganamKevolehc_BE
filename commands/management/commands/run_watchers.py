@@ -5,7 +5,7 @@ from constants import paths
 from constants.constants import TEST_WATCHER_ID
 from contenting.models import ContentWatcher
 from contenting.reganam_tnetnoc.watchers.youtube.api import YoutubeWorker
-from contenting.reganam_tnetnoc.watchers.youtube.django_manager import YoutubeWatcherDjangoManager
+from contenting.reganam_tnetnoc.watchers.youtube.django_manager import YoutubeWatcherDjangoManager, items_ids_to_objects
 from contenting.reganam_tnetnoc.watchers.youtube.manager import YoutubeWatchersManager
 
 dk_file = paths.API_KEY_PATH
@@ -22,6 +22,16 @@ def run_imported_watchers():
         manager.run_updates()
 
 
+def retry_ids():
+    ids = []
+    instances = items_ids_to_objects(ids)
+    for instance in instances:
+        watcher = instance.content_list.content_watcher
+        if watcher:
+            manager = YoutubeWatcherDjangoManager(worker, watcher, log_file=paths.YOUTUBE_API_LOG)
+            manager.retry_items([instance])
+
+
 def run_json_watchers():
     watcher_files = [
         # paths.YOUTUBE_WATCHERS_PATH,
@@ -36,5 +46,6 @@ def run_json_watchers():
 class Command(BaseCommand):
     def handle(self, **options):
         pass
+        # retry_ids()
         run_imported_watchers()
         # run_json_watchers()

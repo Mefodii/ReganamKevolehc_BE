@@ -19,38 +19,39 @@ class ContentItemSerializer(serializers.ModelSerializer):
         model = ContentItem
         fields = '__all__'
 
-    def update(self, instance: ContentItem, validated_data):
+    def update(self, instance: ContentItem, validated_data) -> ContentItem:
         old_position = instance.position
         res = super().update(instance, validated_data)
-        instance.updated(old_position)
+        instance.updated(old_position=old_position)
         return res
 
-    def create(self, validated_data):
+    def create(self, validated_data) -> ContentItem:
         instance: ContentItem = super().create(validated_data)
         instance.created()
         return instance
 
 
 class ContentMusicItemWriteSerializer(serializers.ModelSerializer):
-    create_default_track = serializers.BooleanField(default=False)
+    single_track = serializers.IntegerField(default=None, allow_null=True)
 
     class Meta:
         model = ContentMusicItem
         fields = '__all__'
 
-    def update(self, instance: ContentMusicItem, validated_data):
+    def update(self, instance: ContentMusicItem, validated_data) -> ContentMusicItem:
         # TODO: do not allow to set parsed to true if has any tracks which are not parsed (clean = False, like = None)
         old_position = instance.position
         old_type = instance.type
 
         res = super().update(instance, validated_data)
-        instance.updated(old_position, old_type, validated_data['create_default_track'])
+        instance.updated(old_position=old_position, old_type=old_type,
+                         single_track=validated_data.pop("single_track", None))
         return res
 
-    def create(self, validated_data):
-        create_default = validated_data.pop('create_default_track')
+    def create(self, validated_data) -> ContentMusicItem:
+        single_track = validated_data.pop('single_track', None)
         instance: ContentMusicItem = super().create(validated_data)
-        instance.created(create_default)
+        instance.created(single_track=single_track)
         return instance
 
     def to_representation(self, instance):
@@ -90,13 +91,13 @@ class ContentTrackWriteSerializer(serializers.ModelSerializer):
         model = ContentTrack
         fields = '__all__'
 
-    def update(self, instance: ContentTrack, validated_data):
+    def update(self, instance: ContentTrack, validated_data) -> ContentTrack:
         old_position = instance.position
         res = super().update(instance, validated_data)
-        instance.updated(old_position)
+        instance.updated(old_position=old_position)
         return res
 
-    def create(self, validated_data):
+    def create(self, validated_data) -> ContentTrack:
         instance: ContentTrack = super().create(validated_data)
         instance.created()
         return instance
@@ -115,7 +116,7 @@ class ContentWatcherSerializer(serializers.ModelSerializer):
         model = ContentWatcher
         fields = '__all__'
 
-    def update(self, instance: ContentWatcher, validated_data):
+    def update(self, instance: ContentWatcher, validated_data) -> ContentWatcher:
         if instance.name != validated_data['name'] or instance.category != validated_data['category']:
             content_list_instance: ContentList = instance.content_list
             content_list_instance.name = validated_data['name']

@@ -1,20 +1,37 @@
 from rest_framework import viewsets, permissions
 
 from constants.constants import RequestType
-from utils.drf_utils import MultiSerializerViewSet, MediumResultsSetPagination
+from utils.drf_utils import MultiSerializerViewSet, MediumResultsSetPagination, LargeResultsSetPagination
 from .models import Artist, Release, Track
-from .serializers import ArtistSerializer, ReleaseSerializer, TrackReadSerializer, TrackWriteSerializer
+from .serializers import ArtistWriteSerializer, ReleaseSerializer, TrackReadSerializer, TrackWriteSerializer, \
+    ArtistReadSerializer
 
 QPARAM_TRACK_SEARCH = "trackSearch"
+QPARAM_ARTIST_SEARCH = "artistSearch"
 QPARAM_SEARCH_CASE_SENSITIVE = "caseSensitive"
 
 
-class ArtistViewSet(viewsets.ModelViewSet):
+class ArtistViewSet(MultiSerializerViewSet):
     queryset = Artist.objects.all()
     permission_classes = [
         permissions.AllowAny
     ]
-    serializer_class = ArtistSerializer
+    serializers = {
+        RequestType.DEFAULT.value: ArtistWriteSerializer,
+        RequestType.LIST.value: ArtistReadSerializer,
+        RequestType.RETRIEVE.value: ArtistReadSerializer,
+    }
+    pagination_class = LargeResultsSetPagination
+
+    def get_queryset(self):
+        objects = Artist.objects.all()
+
+        case_sensitive = self.request.query_params.get(QPARAM_SEARCH_CASE_SENSITIVE, "false") == "true"
+        artist_search = self.request.query_params.get(QPARAM_ARTIST_SEARCH, "")
+        if artist_search:
+            objects = objects.filter_by_name_and_alias(artist_search, case_sensitive)
+
+        return objects.order_by('name')
 
 
 class ReleaseViewSet(viewsets.ModelViewSet):

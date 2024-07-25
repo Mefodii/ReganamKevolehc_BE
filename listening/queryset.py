@@ -15,9 +15,15 @@ class ArtistQuerySet(TypedQuerySet):
     def filter_dead(self) -> Self:
         return self.filter(tracks__isnull=True, feats__isnull=True, remixes__isnull=True, covers__isnull=True)
 
-    def find_name_and_alias(self, name: str, ignore_case: bool) -> Artist | None:
-        # TODO: lookup for artist with given name or if in alias
-        pass
+    def filter_by_name_and_alias(self, value: str, case_sensitive: bool = False) -> Self:
+        lookup_type = "contains" if case_sensitive else "icontains"
+
+        filters = (
+                Q(**{f"name__{lookup_type}": value}) |
+                Q(**{f"alias__{lookup_type}": value})
+        )
+
+        return self.filter(filters)
 
 
 class ExactArtistQuerySet(TypedQuerySet):
@@ -53,19 +59,14 @@ class TrackQuerySet(ExactArtistQuerySet):
 
         filters = (
                 Q(**{f"title__{lookup_type}": value}) |
-                Q(**{f"display_title__{lookup_type}": value}) |
                 Q(**{f"alias__{lookup_type}": value}) |
                 Q(**{f"artists__name__{lookup_type}": value}) |
-                Q(**{f"artists__display_name__{lookup_type}": value}) |
                 Q(**{f"artists__alias__{lookup_type}": value}) |
                 Q(**{f"feat__name__{lookup_type}": value}) |
-                Q(**{f"feat__display_name__{lookup_type}": value}) |
                 Q(**{f"feat__alias__{lookup_type}": value}) |
                 Q(**{f"remix__name__{lookup_type}": value}) |
-                Q(**{f"remix__display_name__{lookup_type}": value}) |
                 Q(**{f"remix__alias__{lookup_type}": value}) |
                 Q(**{f"cover__name__{lookup_type}": value}) |
-                Q(**{f"cover__display_name__{lookup_type}": value}) |
                 Q(**{f"cover__alias__{lookup_type}": value})
         )
 

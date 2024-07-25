@@ -46,9 +46,9 @@ class VideoWriteSerializer(serializers.ModelSerializer):
         return attrs
 
     def update(self, instance: Video, validated_data):
-        old_order = instance.order
+        old_position = instance.position
         res = super().update(instance, validated_data)
-        instance.updated(old_order)
+        instance.updated(old_position=old_position)
         return res
 
     def create(self, validated_data):
@@ -77,7 +77,7 @@ class GroupReadSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_videos(instance):
-        videos = instance.videos.all().order_by('order')
+        videos = instance.videos.all().order_by('position')
         return VideoReadSerializer(videos, many=True).data
 
 

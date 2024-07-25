@@ -56,14 +56,14 @@ class VideoViewSet(MultiSerializerViewSet):
     def get_queryset(self):
         video_type = self.request.query_params.get(QPARAM_GROUP, None)
         objects: VideoManager = Video.objects
-        return objects.filter_by_group(video_type).order_by('order')
+        return objects.filter_by_group(video_type).order_by('position')
 
     def destroy(self, request, *args, **kwargs):
         data = {}
         try:
             instance: Video = self.get_object()
-            instance.deleted()
             self.perform_destroy(instance)
+            instance.deleted()
             data = VideoReadSerializer(instance, context=self.get_serializer_context()).data
             response_status = status.HTTP_200_OK
         except Http404:

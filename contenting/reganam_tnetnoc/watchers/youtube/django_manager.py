@@ -1,3 +1,5 @@
+import time
+
 # noinspection PyProtectedMember
 from yt_dlp import DownloadError
 
@@ -6,7 +8,7 @@ from constants.enums import DownloadStatus, ContentItemType, ContentWatcherStatu
 from constants.enums import FileExtension
 from contenting.models import ContentWatcher, ContentItem, ContentMusicItem
 from contenting.reganam_tnetnoc.model.file_tags import FileTags
-from contenting.reganam_tnetnoc.model.playlist_item import PlaylistItemList
+from contenting.reganam_tnetnoc.model.playlist_item import PlaylistItemList, PlaylistItem
 from contenting.reganam_tnetnoc.utils.downloader import YoutubeDownloader
 from contenting.reganam_tnetnoc.watchers.youtube.api import YoutubeWorker, YoutubeAPIItem
 from contenting.reganam_tnetnoc.watchers.youtube.media import YoutubeVideo
@@ -15,6 +17,29 @@ from contenting.reganam_tnetnoc.watchers.youtube.watcher import YoutubeWatcher
 from utils import datetime_utils, file
 from utils.ffmpeg import Ffmpeg
 from utils.string_utils import normalize_file_name
+
+MODE_UPDATES = "UPDATES"
+MODE_RETRY = "RETRY"
+
+
+def items_ids_to_objects(ids: list[str]):
+    result: list[ContentItem | ContentMusicItem] = []
+    for item_id in ids:
+        try:
+            instance = ContentItem.objects.get(item_id=item_id)
+            result.append(instance)
+            continue
+        except ContentItem.DoesNotExist:
+            pass
+
+        try:
+            instance = ContentMusicItem.objects.get(item_id=item_id)
+            result.append(instance)
+            continue
+        except ContentItem.DoesNotExist:
+            raise KeyError(f"{item_id} does not exist")
+
+    return result
 
 
 # TODO: https://channels.readthedocs.io/en/stable/tutorial/part_1.html
@@ -40,9 +65,13 @@ class YoutubeWatcherDjangoManager:
             if console_print:
                 print(message)
 
+    def is_watcher_available(self) -> bool:
+        return self.watcher.status not in (ContentWatcherStatus.DEAD.value, ContentWatcherStatus.NONE.value,
+                                           ContentWatcherStatus.IGNORE.value, ContentWatcherStatus.RUNNING.value)
+
     def run_updates(self) -> None:
-        if self.watcher.status in (ContentWatcherStatus.DEAD.value, ContentWatcherStatus.NONE.value,
-                                   ContentWatcherStatus.IGNORE.value):
+        if not self.is_watcher_available():
+            self.log(f"Watcher is unavailable. Status: {self.watcher.status}", True)
             return
 
         try:
@@ -62,7 +91,7 @@ class YoutubeWatcherDjangoManager:
                 self.download_pending(new_content_items)
                 self.append_tags(new_content_items)
 
-                self.temp_old_func(new_content_items)
+                self.temp_old_func(new_content_items, MODE_UPDATES)
 
             for content_item in new_content_items:
                 content_item.save()
@@ -74,36 +103,70 @@ class YoutubeWatcherDjangoManager:
             self.watcher.save()
             raise e
 
-    def temp_old_func(self, new_content_items: list[ContentItem | ContentMusicItem]):
+    def temp_old_func(self, items: list[ContentItem | ContentMusicItem], mode: str):
+        def items_to_videos():
+            vs: list[YoutubeVideo] = []
+            for inner_item in items:
+                video_id = inner_item.item_id
+                title = inner_item.title
+                channel_name = self.watcher.name
+                published_at = datetime_utils.py_to_yt(inner_item.published_at)
+                number = inner_item.position
+                file_extension = old_watcher.file_extension
+                file_name = inner_item.file_name
+                video_quality = None if self.watcher.video_quality == -1 else self.watcher.video_quality
+                status = inner_item.download_status
+                video_type = YoutubeVideo.TYPE_REGULAR
+
+                v = YoutubeVideo(video_id, title, channel_name, published_at, number, save_location=None,
+                                 file_extension=file_extension, file_name=file_name, video_quality=video_quality,
+                                 status=status, video_type=video_type)
+                vs.append(v)
+
+            return vs
+
         # TODO: this is a temporary writing to the old playlist / db file. Just in case
         playlist_file = r"E:/Google Drive/Mu/plist/" + self.watcher.name + ".txt"
         old_watcher = YoutubeWatcher(self.watcher.name, self.watcher.watcher_id, "", -1,
                                      FileExtension.from_str(self.watcher.file_extension), True,
                                      playlist_file, self.watcher.video_quality)
-        if self.watcher.is_music():
-            PlaylistItemList.append_content_items(playlist_file, new_content_items)
 
-        videos: list[YoutubeVideo] = []
-        for item in new_content_items:
-            video_id = item.item_id
-            title = item.title
-            channel_name = self.watcher.name
-            published_at = datetime_utils.py_to_yt(item.published_at)
-            number = item.position
-            file_extension = old_watcher.file_extension
-            file_name = item.file_name
-            video_quality = None if self.watcher.video_quality == -1 else self.watcher.video_quality
-            status = item.download_status
-            video_type = YoutubeVideo.TYPE_REGULAR
+        if mode == MODE_UPDATES:
+            if self.watcher.is_music():
+                PlaylistItemList.append_content_items(playlist_file, items)
 
-            video = YoutubeVideo(video_id, title, channel_name, published_at, number, save_location=None,
-                                 file_extension=file_extension, file_name=file_name, video_quality=video_quality,
-                                 status=status, video_type=video_type)
-            videos.append(video)
+            videos = items_to_videos()
+            old_watcher.videos = videos
+            old_watcher.update_db()
+            return
 
-        old_watcher.videos = videos
-        old_watcher.update_db()
-        # TODO: read the watchers JSON file and update the watcher there is exists
+        if mode == MODE_RETRY:
+            # Finc each item in old files and update its status
+            for item in items:
+                if item.download_status != DownloadStatus.DOWNLOADED.value:
+                    continue
+
+                if self.watcher.is_music():
+                    playlist_item = old_watcher.playlist_items.get_by_url(item.url)
+                    if playlist_item is None:
+                        raise ValueError(f"Playlist item not found: {item.item_id}. Watcher: {self.watcher.name}")
+
+                    # TODO: stopped here last time
+                    if playlist_item.item_flag == PlaylistItem.ITEM_FLAG_MISSING:
+                        playlist_item.item_flag = PlaylistItem.ITEM_FLAG_DEFAULT
+
+                watcher_video = old_watcher.db_videos.get_by_id(item.item_id)
+                if watcher_video is None:
+                    raise ValueError(f"Video not found: {item.item_id}. Watcher: {self.watcher.name}")
+                watcher_video.status = item.download_status
+
+            # Save changes to the old files
+            old_watcher.db_videos.write(old_watcher.db_file)
+            if self.watcher.is_music():
+                old_watcher.playlist_items.write(old_watcher.playlist_file)
+            return
+
+        self.log(f"Unknown mode: {mode}", True)
 
     def run_integrity(self):
         # TODO: implement
@@ -112,6 +175,30 @@ class YoutubeWatcherDjangoManager:
     def retry_unables(self):
         # TODO: implement
         ...
+
+    def retry_items(self, items: list[ContentItem | ContentMusicItem]):
+        if not self.watcher.download:
+            self.log(f"Why retry on !download watcher? {self.watcher}", True)
+            return
+
+        if not self.is_watcher_available():
+            self.log(f"Watcher is unavailable. Status: {self.watcher.status}", True)
+            return
+
+        for item in items:
+            if item.download_status in [DownloadStatus.DOWNLOADED.value, DownloadStatus.DOWNLOADING.value]:
+                self.log(f"Item is unavailable for retry. Status: {self.watcher.status}", True)
+                continue
+
+            item.download_status = DownloadStatus.PENDING.value
+
+        self.download_pending(items)
+        self.append_tags(items)
+
+        self.temp_old_func(items, MODE_RETRY)
+
+        for content_item in items:
+            content_item.save()
 
     def process_new_uploads(self, new_yt_uploads: list[YoutubeAPIItem]) -> list[ContentItem | ContentMusicItem]:
         items_count = self.watcher.get_items_count()
@@ -188,14 +275,24 @@ class YoutubeWatcherDjangoManager:
             queue = self.new_queue(content_item)
             result_file = queue.get_file_abs_path()
 
+            max_tries = 3
             if file.exists(result_file):
                 self.log(f"Queue ignored, file exist: {q_progress}", True)
             else:
                 self.log(f"Process queue: {q_progress} - {result_file}", True)
-                try:
-                    self.downloader.download(queue)
-                except DownloadError:
-                    self.log(f"Unable to download - {queue.url}", True)
+
+                current_try = 1
+                while current_try <= max_tries:
+                    try:
+                        self.downloader.download(queue)
+                        break
+                    except DownloadError:
+                        current_try += 1
+                        if current_try <= max_tries:
+                            self.log(f"Retry download {current_try}/{max_tries} - {queue.url}", True)
+                            time.sleep(3)
+                        else:
+                            self.log(f"Unable to download - {queue.url}", True)
 
             if file.exists(result_file):
                 content_item.download_status = DownloadStatus.DOWNLOADED.value
@@ -223,3 +320,5 @@ class YoutubeWatcherDjangoManager:
             file_abs_path = f"{self.save_location}\\{item.file_name}.{self.watcher.file_extension}"
             if file.exists(file_abs_path):
                 Ffmpeg.add_tags(file_abs_path, tags, loglevel="error")
+            else:
+                self.log(f"File not found to append tags: {file_abs_path}", True)

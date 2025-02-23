@@ -71,7 +71,7 @@ class YoutubeWatcherDjangoManager:
 
     def run_updates(self) -> None:
         if not self.is_watcher_available():
-            self.log(f"Watcher is unavailable. Status: {self.watcher.status}", True)
+            self.log(f"Watcher <{self.watcher.name}> is unavailable. Status: {self.watcher.status}", True)
             return
 
         try:
@@ -83,6 +83,7 @@ class YoutubeWatcherDjangoManager:
 
             self.log(f'{new_check_date}. '
                      f'Checking: {self.watcher.watcher_id} - {self.watcher.name}', True)
+            # TODO: if new_check_date - check_date < 12 hours, get user prompt if to make check again
             new_yt_uploads = self.api.get_uploads(self.watcher.watcher_id, check_date)
             self.log(f"{self.watcher.name.ljust(30)} || New uploads - {len(new_yt_uploads)}", True)
 
@@ -216,6 +217,22 @@ class YoutubeWatcherDjangoManager:
 
             db_content_item = self.watcher.get_content_item(content_item.item_id)
             if db_content_item:
+                # This is usually for livestreams.
+                # When downloading a livestream after it is finished it has one publish date.
+                # Then after a while it gets a new publishing date and there is conflict with already downloaded item.
+                #
+                # Check if item from api has the next position from item from DB and the same title.
+                # In that case sync can be done.
+                if db_content_item.position + 1 == content_item.position and db_content_item.title == content_item.title:
+                    if db_content_item.published_at != content_item.published_at:
+                        inp = input(f"Sync new publish date? DB: {db_content_item.published_at} | "
+                                    f"API: {content_item.published_at} | Y/N")
+                        if inp in "Yy":
+                            db_content_item.published_at = content_item.published_at
+                            db_content_item.save()
+                            items_count -= 1
+                            continue
+
                 raise ValueError(f"Content item with id: {db_content_item.item_id} already exists. "
                                  f"DB Item: {str(db_content_item)}")
 

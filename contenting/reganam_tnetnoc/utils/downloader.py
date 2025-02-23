@@ -4,6 +4,7 @@ import yt_dlp as youtube_dl
 
 from constants.constants import ALLOWED_VIDEO_QUALITY
 from constants.enums import FileExtension
+from constants.paths import YT_COOKIES_FILE
 from contenting.reganam_tnetnoc.watchers.youtube.queue import YoutubeQueue
 from utils import file
 from utils.ffmpeg import Ffmpeg
@@ -103,7 +104,8 @@ class YoutubeDownloader:
             'ffmpeg_location': self.ffmpeg_location,
             'outtmpl': output_file_path,
             'logger': YoutubeDownloaderLogger(),
-            'progress_hooks': [self.my_hook]
+            'progress_hooks': [self.my_hook],
+            'cookiefile': YT_COOKIES_FILE
         }
 
     def build_audio_download_options(self, output_file_path):

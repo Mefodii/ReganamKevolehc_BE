@@ -1,3 +1,4 @@
+import json
 import os
 import re
 from typing import Tuple
@@ -175,6 +176,10 @@ class YoutubeAPIItem:
             total_seconds += int(seconds.group()[:-1])
 
         return total_seconds
+
+    def pretty_repr(self):
+        return (f"Playlist data: {json.dumps(self.playlist_item.data, sort_keys=True, indent=2)}.\n"
+                f"Video data: {json.dumps(self.video_item.data, sort_keys=True, indent=2)}")
 
     def __repr__(self):
         return f"Playlist data: {self.playlist_item.__repr__()}.\nVideo data: {self.video_item.__repr__()}"

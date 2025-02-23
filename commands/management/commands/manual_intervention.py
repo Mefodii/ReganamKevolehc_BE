@@ -7,6 +7,7 @@ from django.db.models import QuerySet
 from commands.management.commands.run_watcher_import import RELAX_N_LISTEN_LIST
 from constants.enums import TrackStatus
 from contenting.models import ContentTrack, ContentMusicItem, ContentList
+from contenting.reganam_tnetnoc.main import short_scripts
 from listening.models import Track, Artist, ReleaseTrack, Release, ReleaseArtists
 from utils import file
 
@@ -143,9 +144,14 @@ def assign_release_artist():
             position += 1
 
 
+def run_short_scripts():
+    short_scripts.__main__()
+
+
 class Command(BaseCommand):
     def handle(self, **options):
         pass
+        run_short_scripts()
         # items = ContentMusicItem.objects.filter_by_content_list(57).order_by("position")
         # print(items.count())
         # for i, item in enumerate(items, start=1):
@@ -158,7 +164,7 @@ class Command(BaseCommand):
         # for track in tracks:
         #     print(track)
 
-        assign_release_artist()
+        # assign_release_artist()
 
         # debug_import()
         # clean_dead_music()

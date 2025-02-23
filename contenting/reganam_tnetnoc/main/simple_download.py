@@ -71,6 +71,7 @@ def download_watcher_like(input_queue: list[InputQueue], save_location: str):
 # Main function
 #######################################################################################################################
 def __main__(settings_file):
+    print(MY_LOCATION)
     os.chdir(MY_LOCATION)
     print("Started at: " + MY_LOCATION)
     print("Settings: " + str(settings_file))
@@ -88,12 +89,16 @@ def __main__(settings_file):
     downloader = YoutubeDownloader(resources_path)
 
     input_lines = file.read(input_file, file.ENCODING_UTF8)
-    input_lines = list(filter(lambda line: not line.startswith(COMMENT_FLAG), input_lines))
-    input_queue = [InputQueue.from_str(line) for line in input_lines]
-    simple_queue: list[InputQueue] = list(filter(lambda item: item.queue_type == InputQueueType.ARGUMENTS, input_queue))
-    simple_queue += list(filter(lambda item: item.queue_type == InputQueueType.DEFAULT, input_queue))
-    watcher_type_queue: list[InputQueue] = list(filter(lambda item: item.queue_type == InputQueueType.WATCHER_LIKE,
-                                                       input_queue))
+    input_lines = list(filter(lambda l1: not l1.startswith(COMMENT_FLAG), input_lines))
+
+    simple_queue: list[InputQueue] = []
+    watcher_type_queue: list[InputQueue] = []
+    for line in input_lines:
+        q: InputQueue = InputQueue.from_str(line)
+        if q.queue_type == InputQueueType.WATCHER_LIKE:
+            watcher_type_queue.append(q)
+        else:
+            simple_queue.append(q)
 
     total_to_download = len(simple_queue)
     for i, j in enumerate(simple_queue):

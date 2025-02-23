@@ -14,7 +14,6 @@ import os
 from pathlib import Path
 
 from constants import paths
-from constants.paths import DB_SQLITE_MAIN_PATH
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -91,10 +90,6 @@ WSGI_APPLICATION = 'ReganamKevolehc_BE.wsgi.application'
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 
 DATABASES = {
-    # 'default': {
-    #     'ENGINE': 'django.db.backends.sqlite3',
-    #     'NAME': DB_SQLITE_MAIN_PATH,
-    # }
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'KevolehcDB',

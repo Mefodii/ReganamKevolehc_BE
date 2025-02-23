@@ -1,4 +1,4 @@
-DB_SQLITE_MAIN_PATH = r"E:\Google Drive\ReganamKevolehc\db.sqlite3"
+YT_COOKIES_FILE = r"C:\Users\Mefodii\Downloads\cookies-1.txt"
 
 CONTENTING_TEMP_ROOT = r"E:\Tnetnoc\tnetnoc_watchers"
 CONTENTING_VIDEO_ROOT = r"G:\Filme"

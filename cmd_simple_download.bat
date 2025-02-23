@@ -1,0 +1,1 @@
+start cmd.exe /k "..\ReganamKevolehc-venv\Scripts\activate.bat & python manage.py run_simple_download"

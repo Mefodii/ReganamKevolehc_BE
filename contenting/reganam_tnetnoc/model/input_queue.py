@@ -5,6 +5,7 @@ from constants.enums import FileExtension
 
 ARGUMENTS_FLAG = "<!>"
 WATCHER_LIKE_FLAG = "<#>"
+PLAIN_MKV_FLAG = "@"
 COMMENT_FLAG = "#"
 SEPARATOR = ";"
 
@@ -27,6 +28,7 @@ class InputQueueType(Enum):
     DEFAULT = "default"
     ARGUMENTS = ARGUMENTS_FLAG
     WATCHER_LIKE = WATCHER_LIKE_FLAG
+    PLAIN_MKV = PLAIN_MKV_FLAG
 
 
 class InputQueue:
@@ -54,7 +56,10 @@ class InputQueue:
         url = data
 
         args = data.split(SEPARATOR)
-        if args[POS_QUEUE_TYPE] in [ARGUMENTS_FLAG, WATCHER_LIKE_FLAG]:
+        if data[0] == PLAIN_MKV_FLAG:
+            url = data[1:]
+            file_extension = FileExtension.MKV
+        elif args[POS_QUEUE_TYPE] in [ARGUMENTS_FLAG, WATCHER_LIKE_FLAG]:
             queue_type = InputQueueType(args[POS_QUEUE_TYPE])
             expected_args = ARGS_TYPE_TOTAL_ARGS if queue_type == InputQueueType.ARGUMENTS else WATCHER_TYPE_TOTAL_ARGS
 
@@ -62,7 +67,7 @@ class InputQueue:
                 raise Exception(f"Expected args: {expected_args}. Received: {len(args)}. Data: {data}")
 
             if len(args[POS_TITLE]) != 0:
-                title = args[POS_TITLE]
+                title = args[POS_TITLE].strip()
             if len(args[POS_FILE_EXTENSION]) != 0:
                 file_extension = FileExtension.from_str(args[POS_FILE_EXTENSION])
             if len(args[POS_VIDEO_QUALITY]) != 0:

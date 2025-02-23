@@ -59,6 +59,7 @@ class PositionedModel(models.Model):
 
 
 class TypedQuerySet(models.QuerySet):
+
     def filter(self, *args, **kwargs) -> Self:
         return super().filter(*args, **kwargs)
 

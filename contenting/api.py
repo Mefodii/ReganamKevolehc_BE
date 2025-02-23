@@ -14,6 +14,8 @@ from .serializers import ContentListSerializer, ContentItemSerializer, ContentTr
 QPARAM_CONTENT_LIST = "contentList"
 QPARAM_CONTENT_LIST_PURE = "getCLP"
 QPARAM_HIDE_CONSUMED = "hideConsumed"
+QPARAM_TITLE_SEARCH = "titleSearch"
+QPARAM_SEARCH_CASE_SENSITIVE = "caseSensitive"
 
 
 # TODO: move function somewhere else
@@ -42,6 +44,8 @@ class ContentItemViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         content_list = self.request.query_params.get(QPARAM_CONTENT_LIST, None)
         hide_consumed = self.request.query_params.get(QPARAM_HIDE_CONSUMED, "false") == "true"
+        case_sensitive = self.request.query_params.get(QPARAM_SEARCH_CASE_SENSITIVE, "false") == "true"
+        title_search = self.request.query_params.get(QPARAM_TITLE_SEARCH, "")
 
         if is_get_list(self.request, self.action) and content_list is None:
             raise ValidationError(f"Missing query param: {QPARAM_CONTENT_LIST}")
@@ -49,6 +53,9 @@ class ContentItemViewSet(viewsets.ModelViewSet):
         objects = ContentItem.objects.filter_by_content_list(content_list)
         if hide_consumed:
             objects = objects.filter_not_consumed()
+
+        if title_search:
+            objects = objects.filter_by_title(title_search, case_sensitive)
 
         return objects.order_by('position')
 

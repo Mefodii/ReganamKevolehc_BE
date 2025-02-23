@@ -4,6 +4,7 @@ from typing import Self
 
 from django.db.models import Q
 
+from constants.enums import ContentCategory
 from utils.model_utils import TypedQuerySet
 
 
@@ -32,6 +33,12 @@ class ContentItemQuerySet(ContentItemAbstractQuerySet):
     def filter_not_consumed(self) -> Self:
         return self.filter(consumed=False)
 
+    def filter_by_title(self, value: str, case_sensitive: bool = False) -> Self:
+        lookup_type = "contains" if case_sensitive else "icontains"
+        filters = (Q(**{f"title__{lookup_type}": value}))
+
+        return self.filter(filters)
+
     def is_consumed(self) -> bool:
         return not self.filter_not_consumed().exists()
 
@@ -50,4 +57,13 @@ class ContentWatcherQuerySet(TypedQuerySet):
         if source_type is None:
             return self
 
-        return self.filter(Q(source_type=source_type))
+        return self.filter(source_type=source_type)
+
+    def get_passive(self) -> Self:
+        return self.filter(download=False).order_by('name')
+
+    def get_active_audio(self) -> Self:
+        return self.filter(download=True, category=ContentCategory.MUSIC.value).order_by('name')
+
+    def get_active_video(self) -> Self:
+        return self.filter(download=True).exclude(category=ContentCategory.MUSIC.value).order_by('name')

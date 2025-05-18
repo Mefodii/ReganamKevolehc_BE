@@ -5,6 +5,7 @@ from django.db import models
 
 
 class PositionedModel(models.Model):
+    objects = models.Manager()
     parent_name: str = ""
     position = models.IntegerField(validators=[MinValueValidator(1)])
 
@@ -26,8 +27,8 @@ class PositionedModel(models.Model):
 
         filters[parent_name] = getattr(self, parent_name)
         if new_position and old_position:  # Instance was updated
-            # mod == -1 -> instance is moved down in order, so all other objects in range has to be shifted down
-            # mod == 1  -> instance is moved up in order, so all other objects in range has to be shifted up
+            # mod == -1 -> instance is moved down in order, so all other objects in range have to be shifted down
+            # mod == 1 -> instance is moved up in order, so all other objects in range have to be shifted up
             order_mod = -1 if old_position < new_position else 1
             gte, lte = sorted([old_position, new_position])
             filters[f"position__lte"] = lte

@@ -5,11 +5,12 @@ from django.db import models
 from django.db.models import QuerySet
 
 from commands.management.commands.run_watcher_import import RELAX_N_LISTEN_LIST
-from constants.enums import TrackStatus
-from contenting.models import ContentTrack, ContentMusicItem, ContentList
+from constants.enums import TrackStatus, WatchingStatus
+from contenting.models import ContentTrack, ContentMusicItem, ContentList, ContentItem
 from contenting.reganam_tnetnoc.main import short_scripts
 from listening.models import Track, Artist, ReleaseTrack, Release, ReleaseArtists
 from utils import file
+from watching.models import Video
 
 
 def print_counts():
@@ -146,6 +147,19 @@ def assign_release_artist():
 
 def run_short_scripts():
     short_scripts.__main__()
+
+
+def get_last_modified():
+    items = ContentItem.objects.all().order_by("-modified_at")[0:50]
+    for item in items:
+        print(item.id, item.url, item.modified_at)
+
+
+def get_last_watched():
+    items = Video.objects.all().filter(watched_date__isnull=False, status=WatchingStatus.FINISHED.value).order_by(
+        "-watched_date")[0:50]
+    for item in items:
+        print(item.id, item.name, item.rating, item.watched_date)
 
 
 class Command(BaseCommand):

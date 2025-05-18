@@ -1,3 +1,5 @@
+import time
+
 from django.core.management.base import BaseCommand
 
 from constants import paths
@@ -27,6 +29,7 @@ def run_imported_watchers():
 
             manager = YoutubeWatcherDjangoManager(worker, watcher, log_file=paths.YOUTUBE_API_LOG)
             manager.run_updates()
+            time.sleep(10)
 
     run_updates(ContentWatcher.objects.get_passive())
     run_updates(ContentWatcher.objects.get_active_audio())

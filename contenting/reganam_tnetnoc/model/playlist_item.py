@@ -345,6 +345,7 @@ class PlaylistItemList:
         alias = self.find_in_artist("-> Alias: ")
         if alias:
             return alias.split(", ")
+        return None
 
     def find_in_artist(self, pattern: str) -> str | None:
         if not self.items or not self.items[0].is_dummy:

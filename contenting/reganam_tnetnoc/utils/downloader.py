@@ -50,7 +50,7 @@ class YoutubeDownloader:
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
             ydl.download([queue.url])
 
-            # TODO: what is the purpose of ydl.extract_info(queue.url) and in other functions as well
+            # TODO: I forgot what was the purpose of ydl.extract_info(queue.url) and in other functions as well
             ydl.extract_info(queue.url)
             queue.audio_dl_stats = copy.deepcopy(self.download_stats)
 

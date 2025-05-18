@@ -173,11 +173,11 @@ class Track(models.Model):
 
     def merge(self, source: Track):
         """
-        If self is not clean, then source should also be not clean
+        If self is not clean, then the source should also be not clean
 
-        Obtain a new status from merging source status and self status
+        Get a new status from merging source status and status of self
         References of ReleaseTrack and ContentTrack of source track are replaced with self.
-        At the end, source track is deleted.
+        At the end, the source track is deleted.
 
         @param source:
         @return:

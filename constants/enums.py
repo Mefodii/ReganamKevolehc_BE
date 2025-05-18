@@ -179,3 +179,5 @@ class TrackStatus(EnumChoices):
             if destination == TrackStatus.DISLIKE:
                 return None
             return source
+
+        return None

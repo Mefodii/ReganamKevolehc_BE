@@ -1,4 +1,4 @@
-YT_COOKIES_FILE = r"C:\Users\Mefodii\Downloads\cookies-1.txt"
+YT_COOKIES_FILE = r"C:\Users\Mefodii\Downloads\cookies.txt"
 
 CONTENTING_TEMP_ROOT = r"E:\Tnetnoc\tnetnoc_watchers"
 CONTENTING_VIDEO_ROOT = r"G:\Filme"

@@ -26,7 +26,7 @@ DOWNLOAD_STATUS_MAPPING: dict[str, DownloadStatus] = {
     YoutubeVideo.STATUS_SKIP: DownloadStatus.SKIP,
 }
 
-TRACK_SPLIT_FILE = r"E:\Google Drive\ReganamKevolehc\temp_track_split.json"
+TRACK_SPLIT_FILE = r"E:\Tnetnoc\input\temp_track_split.json"
 track_split_data = file.read_json(TRACK_SPLIT_FILE)
 
 RELAX_N_LISTEN_LIST = "Relax'n'Listen (frozen)"
@@ -170,6 +170,7 @@ def blind_search(raw_title: str) -> Track | None:
         tracks = Track.objects.filter_exact_artists(artist_objects).filter(title__iexact=title)
         if len(tracks) == 1:
             return tracks[0]
+        return None
     except (Artist.DoesNotExist, ValueError):
         return None
 
@@ -393,6 +394,7 @@ def get_or_create_release_track(release: Release, track: Track, position: int, c
     release_track.track = track
 
     release_track.save()
+    return release_track
 
 
 def import_music_item(content_list: ContentList, playlist_item: PlaylistItem,

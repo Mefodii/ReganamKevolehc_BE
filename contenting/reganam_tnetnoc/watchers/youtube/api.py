@@ -9,7 +9,7 @@ import googleapiclient.discovery
 from constants.constants import DEFAULT_YOUTUBE_WATCH
 from utils import file
 from utils.datetime_utils import compare_yt_dates, yt_hours_diff
-from utils.string_utils import replace_chars_variations
+from utils.string_utils import normalize_text
 
 # Disable OAuthlib's HTTPS verification when running locally.
 # *DO NOT* leave this option enabled in production.
@@ -34,7 +34,7 @@ class YoutubeAPIPlaylistItem:
 
     def set_title(self, new_title: str): self.data["snippet"]["title"] = new_title
 
-    def replace_title(self): self.set_title(replace_chars_variations(self.get_title()))
+    def replace_title(self): self.set_title(normalize_text(self.get_title()))
 
     def get_publish_date_old(self) -> str: return self.data.get("snippet", {}).get("publishedAt")
 
@@ -56,7 +56,7 @@ class YoutubeAPIVideoItem:
 
     def set_title(self, new_title: str): self.data["snippet"]["title"] = new_title
 
-    def replace_title(self): self.set_title(replace_chars_variations(self.get_title()))
+    def replace_title(self): self.set_title(normalize_text(self.get_title()))
 
     def get_publish_date(self) -> str: return self.data.get("snippet").get("publishedAt")
 
@@ -222,7 +222,7 @@ class YoutubeWorker:
     def get_uploads_playlist_id(self, channel_id: str) -> str:
         """
         Each YouTube channel has a default "uploads" playlist which contains all the videos
-        :param channel_id: IF of the YouTube channel
+        :param channel_id: ID of the YouTube channel
         :return: ID of the playlist named "uploads"
         """
         request = self.youtube.channels().list(
@@ -284,7 +284,7 @@ class YoutubeWorker:
         # Reverse uploads so it will be ascendent by published_at
         result = uploads[::-1]
 
-        # Note 2023.10.17: a check to be sure that results is still received in
+        # Note 2023.10.17: a check to be sure that results are still received in
         #  chronological order and API is working as usual
         sorted_uploads = YoutubeAPIItem.sort_by_publish_date(uploads)
         for i1, i2 in zip(sorted_uploads, result):
@@ -298,7 +298,7 @@ class YoutubeWorker:
     def get_videos(self, id_list: list[str]) -> list[YoutubeAPIVideoItem]:
         items: list[YoutubeAPIVideoItem] = []
 
-        # Breaks id_list in arrays of the length of MAX_RESULTS
+        # Breaks id_list in arrays with length of MAX_RESULTS
         chunks = [id_list[i:i + MAX_RESULTS] for i in range(0, len(id_list), MAX_RESULTS)]
         for chunk in chunks:
             comma_chunk = ",".join(chunk)
@@ -316,7 +316,7 @@ class YoutubeWorker:
 
     def get_playlist_items(self, playlist_id: str, page_token: str) \
             -> Tuple[list[YoutubeAPIPlaylistItem], str | None, bool]:
-        # Note 2023.10.17: It seems that results are sorted by publish date
+        # Note 2023.10.17: It seems that results are sorted by "publish date"
 
         request = self.youtube.playlistItems().list(
             part="snippet,contentDetails",

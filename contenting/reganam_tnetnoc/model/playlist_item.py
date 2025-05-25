@@ -53,11 +53,11 @@ class PlaylistItem:
         self.item_flag = item_flag
         self.number = number
         # Note: currently no special handling for children.
-        # Every line which is under this item and until next PlaylistItem is considered as child.
+        # Every line under this item and until the next PlaylistItem is considered as child.
         self.children: list[str] = []
         self.is_dummy = True if title == PlaylistItem.DUMMY else False
 
-        # Note: I hope these are temporary, need for importing to Django
+        # Note: I hope these are temporary, needed for importing to Django
         self.comment = ""
         self.parsed_items: list[PlaylistChildItem] = []
 
@@ -192,8 +192,9 @@ class PlaylistItem:
         # Keeping it simple atm
         return line[1:2] in "[{"
 
-    def has_track_child(self) -> bool:
-        return any(self.is_track_child(child) for child in self.children)
+    # TODO: 2025-05-23 - To be deteled
+    # def has_track_child(self) -> bool:
+    #     return any(self.is_track_child(child) for child in self.children)
 
     @staticmethod
     def is_track_child(child: str) -> bool:
@@ -319,11 +320,11 @@ class PlaylistChildItem:
 
 
 class PlaylistItemList:
-    def __init__(self, data: list[PlaylistItem], is_watcher: bool = True):
+    def __init__(self, playlist_items: list[PlaylistItem], is_watcher: bool = True):
         self.is_watcher = is_watcher
         self.downloaded_position = 0
         self.in_lib_position = -1
-        self.items = data
+        self.items = playlist_items
 
         for item in self.items:
             if DOWNLOADED_SEP in "".join(item.children):
@@ -378,7 +379,7 @@ class PlaylistItemList:
 
         playlist_data = file.read(file_path, file.ENCODING_UTF8)
 
-        items = []
+        items: list[PlaylistItem] = []
         item = None
         for line in playlist_data:
             if PlaylistItem.is_playlist_str(line):
@@ -386,7 +387,9 @@ class PlaylistItemList:
                 item = PlaylistItem.from_str(line, default_number)
                 items.append(item)
             else:
+                # All the lines which are not playlist items are children of the previous item
                 if not item:
+                    # All the lines before the first playlist item are children of the dummy item
                     item = PlaylistItem.dummy()
                     items.append(item)
 
@@ -423,7 +426,7 @@ class PlaylistItemList:
 
     def insert(self, item: PlaylistItem) -> None:
         """
-        Shift up by 1 all items with number higher than current item, then insert given item
+        Shift up by 1 all items with number higher than current item, then insert the given item
         :param item:
         :return:
         """
@@ -447,7 +450,7 @@ class PlaylistItemList:
 
     def delete(self, item: PlaylistItem):
         """
-        Remove item, then all items after removed item are shifted down by 1.
+        Remove the item, then all items after the removed item are shifted down by 1.
         :param item:
         :return:
         """
@@ -459,12 +462,12 @@ class PlaylistItemList:
 
     def shift_number(self, position_start: int, position_end: int = None, step: int = 1):
         """
-        All items within range position_start <= item.number <= position_end will have its number changed by step.
+        All items within the range position_start <= item.number <= position_end will have its number changed by step.
 
-        Items are mutated with new position number
+        Items are mutated with the new position number
         :param position_start: video number start position; inclusive
         :param position_end: video number end position; inclusive
-        :param step: how many position to shift. Negative as well
+        :param step: how many positions to shift. Negative as well
         :return:
         """
         for item in self.items:
@@ -489,7 +492,7 @@ class PlaylistItemList:
 
     def is_sorted(self) -> bool:
         """
-        :return: True if all items in list are sorted ascending by number, no duplicates
+        :return: True if all items in the list are sorted ascending by number, no duplicates
         """
         expected_number = 1
         for item in self.items:

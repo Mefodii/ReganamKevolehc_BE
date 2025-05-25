@@ -6,6 +6,7 @@ from yt_dlp import DownloadError
 from constants import env, paths
 from constants.enums import DownloadStatus, ContentItemType, ContentWatcherStatus
 from constants.enums import FileExtension
+from constants.paths import LEGACY_WATCHERS_PATH
 from contenting.models import ContentWatcher, ContentItem, ContentMusicItem
 from contenting.reganam_tnetnoc.model.file_tags import FileTags
 from contenting.reganam_tnetnoc.model.playlist_item import PlaylistItemList, PlaylistItem
@@ -16,7 +17,6 @@ from contenting.reganam_tnetnoc.watchers.youtube.queue import YoutubeQueue
 from contenting.reganam_tnetnoc.watchers.youtube.watcher import YoutubeWatcher
 from utils import datetime_utils, file
 from utils.ffmpeg import Ffmpeg
-from utils.string_utils import normalize_file_name
 
 MODE_UPDATES = "UPDATES"
 MODE_RETRY = "RETRY"
@@ -92,7 +92,7 @@ class YoutubeWatcherDjangoManager:
                 self.download_pending(new_content_items)
                 self.append_tags(new_content_items)
 
-                self.temp_old_func(new_content_items, MODE_UPDATES)
+                self.temp_old_func(new_content_items, MODE_UPDATES, new_check_date)
 
             for content_item in new_content_items:
                 content_item.save()
@@ -104,7 +104,20 @@ class YoutubeWatcherDjangoManager:
             self.watcher.save()
             raise e
 
-    def temp_old_func(self, items: list[ContentItem | ContentMusicItem], mode: str):
+    def temp_old_func(self, items: list[ContentItem | ContentMusicItem], mode: str, check_date: str = ""):
+        """
+        Add new items from YouTube with old db+playlist files.
+        Only for music.
+
+        The idea is to keep in sync Django DB and the old playlist files.
+        Until everything is migrated to Django.
+
+        :param items:
+        :param mode:
+        :param check_date:
+        :return:
+        """
+
         def items_to_videos():
             vs: list[YoutubeVideo] = []
             for inner_item in items:
@@ -126,35 +139,41 @@ class YoutubeWatcherDjangoManager:
 
             return vs
 
-        # TODO: this is a temporary writing to the old playlist / db file. Just in case
+        if not self.watcher.is_music():
+            return
+
         playlist_file = r"E:/Google Drive/Mu/plist/" + self.watcher.name + ".txt"
-        old_watcher = YoutubeWatcher(self.watcher.name, self.watcher.watcher_id, "", -1,
-                                     FileExtension.from_str(self.watcher.file_extension), True,
+        old_watcher = YoutubeWatcher(self.watcher.name, self.watcher.watcher_id, check_date,
+                                     self.watcher.get_items_count() + len(items),
+                                     FileExtension.from_str(self.watcher.file_extension), self.watcher.download,
                                      playlist_file, self.watcher.video_quality)
+        old_watcher.status = self.watcher.status
+        old_watcher.category = self.watcher.category
 
         if mode == MODE_UPDATES:
-            if self.watcher.is_music():
-                PlaylistItemList.append_content_items(playlist_file, items)
-
+            PlaylistItemList.append_content_items(playlist_file, items)
             videos = items_to_videos()
             old_watcher.videos = videos
             old_watcher.update_db()
+            old_watcher_json = old_watcher.to_json()
+            file.write(f"{LEGACY_WATCHERS_PATH}\\{self.watcher.name}.txt", [old_watcher_json])
             return
 
         if mode == MODE_RETRY:
-            # Finc each item in old files and update its status
+            # Find each item in old files and update its status
             for item in items:
                 if item.download_status != DownloadStatus.DOWNLOADED.value:
                     continue
 
-                if self.watcher.is_music():
-                    playlist_item = old_watcher.playlist_items.get_by_url(item.url)
-                    if playlist_item is None:
-                        raise ValueError(f"Playlist item not found: {item.item_id}. Watcher: {self.watcher.name}")
+                playlist_item = old_watcher.playlist_items.get_by_url(item.url)
+                if playlist_item is None:
+                    raise ValueError(f"Playlist item not found: {item.item_id}. Watcher: {self.watcher.name}")
 
-                    # TODO: stopped here last time
-                    if playlist_item.item_flag == PlaylistItem.ITEM_FLAG_MISSING:
-                        playlist_item.item_flag = PlaylistItem.ITEM_FLAG_DEFAULT
+                if playlist_item.item_flag == PlaylistItem.ITEM_FLAG_MISSING:
+                    playlist_item.item_flag = PlaylistItem.ITEM_FLAG_DEFAULT
+                else:
+                    # TODO: handle other flags. Keep debug point here to catch the case and decide how this should work.
+                    print(f">>> Unexpected item flag: {playlist_item.item_flag} for item: {item.item_id}")
 
                 watcher_video = old_watcher.db_videos.get_by_id(item.item_id)
                 if watcher_video is None:
@@ -163,13 +182,23 @@ class YoutubeWatcherDjangoManager:
 
             # Save changes to the old files
             old_watcher.db_videos.write(old_watcher.db_file)
-            if self.watcher.is_music():
-                old_watcher.playlist_items.write(old_watcher.playlist_file)
+            old_watcher.playlist_items.write(old_watcher.playlist_file)
             return
 
         self.log(f"Unknown mode: {mode}", True)
 
     def run_integrity(self):
+        # TODO: implement
+        ...
+
+    def run_sync_old_to_new(self):
+        """
+        web UI is not used properly yet to work with music, playlist files are still in use.
+        So, there is a need to sync the changes from playlist+db into django models.
+
+
+        :return:
+        """
         # TODO: implement
         ...
 
@@ -218,12 +247,13 @@ class YoutubeWatcherDjangoManager:
             db_content_item = self.watcher.get_content_item(content_item.item_id)
             if db_content_item:
                 # This is usually for livestreams.
-                # When downloading a livestream after it is finished it has one publish date.
-                # Then after a while it gets a new publishing date and there is conflict with already downloaded item.
+                # When downloading a livestream after it is finished, it has one publish date.
+                # After a while it gets a new publishing date, and there is conflict with the already downloaded item.
                 #
-                # Check if item from api has the next position from item from DB and the same title.
+                # Check if the item from api has the next position from the item from DB and the same title.
                 # In that case sync can be done.
-                if db_content_item.position + 1 == content_item.position and db_content_item.title == content_item.title:
+                if (db_content_item.position + 1 == content_item.position
+                        and db_content_item.title == content_item.title):
                     if db_content_item.published_at != content_item.published_at:
                         inp = input(f"Sync new publish date? DB: {db_content_item.published_at} | "
                                     f"API: {content_item.published_at} | Y/N")
@@ -274,8 +304,7 @@ class YoutubeWatcherDjangoManager:
         content_item.content_list = self.watcher.content_list
 
         if self.watcher.download:
-            content_item.file_name = normalize_file_name(
-                " - ".join([str(position), self.watcher.name, content_item.title]))
+            content_item.file_name = content_item.build_file_name(position, self.watcher.name, content_item.title)
             skip = not yt_api_item.has_valid_duration()
             content_item.download_status = DownloadStatus.SKIP.value if skip else DownloadStatus.PENDING.value
 

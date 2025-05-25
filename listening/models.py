@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Self
 from django.db import models
 from django.db.models import QuerySet
 
-from constants.constants import MODEL_LIST_SEPARATOR
+from constants.constants import MODEL_LIST_SEPARATOR, TEST_OBJ_ANNOTATION
 from constants.enums import ReleaseType, TrackStatus
 from utils.datetime_utils import default_datetime
 from utils.model_utils import PositionedModel
@@ -38,7 +38,11 @@ class Artist(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
 
+    # noinspection PyClassVar
     objects: ArtistQuerySet[Artist] = ArtistQuerySet.as_manager()
+
+    def is_test_object(self) -> bool:
+        return self.name.startswith(TEST_OBJ_ANNOTATION)
 
     def get_aliases(self):
         if self.alias:
@@ -87,6 +91,7 @@ class Release(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
 
+    # noinspection PyClassVar
     objects: ReleaseQuerySet[Release] = ReleaseQuerySet.as_manager()
 
     @staticmethod
@@ -136,7 +141,11 @@ class Track(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
 
+    # noinspection PyClassVar
     objects: TrackQuerySet[Track] = TrackQuerySet.as_manager()
+
+    def is_test_object(self) -> bool:
+        return self.title.startswith(TEST_OBJ_ANNOTATION)
 
     def get_aliases(self):
         if self.alias:
@@ -335,6 +344,7 @@ class ReleaseTrack(PositionedModel):
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
 
+    # noinspection PyClassVar
     objects: ReleaseTrackQuerySet[ReleaseTrack] = ReleaseTrackQuerySet.as_manager()
 
     @staticmethod

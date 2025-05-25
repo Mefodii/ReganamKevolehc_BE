@@ -10,7 +10,13 @@ NON_PARSED_CHARS = [
 
 CHARS_VARIATIONS = (
     (("—", "‒", "–"), "-"),
-    (("’", "`", "‘"), "'")
+    (("’", "`", "‘", "´"), "'"),
+    (("«", "»"), "\""),
+    (("‍", "⁠"), ""),
+)
+
+LOSSY_CHARS_VARIATIONS = (
+    (("​", " ", "‎"), ""),
 )
 
 DEFAULT_YOUTUBE_WATCH = "https://www.youtube.com/watch?v="
@@ -28,4 +34,4 @@ class RequestType(Enum):
 
 MODEL_LIST_SEPARATOR = ">;<"
 
-TEST_WATCHER_ID = "_testid"
+TEST_OBJ_ANNOTATION = "___testobject"

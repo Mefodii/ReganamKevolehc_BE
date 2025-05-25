@@ -4,12 +4,14 @@ from django.core.management.base import BaseCommand
 from django.db import models
 from django.db.models import QuerySet
 
-from commands.management.commands.run_watcher_import import RELAX_N_LISTEN_LIST
+from commands.management.commands.run_watcher_legacy import RELAX_N_LISTEN_LIST
 from constants.enums import TrackStatus, WatchingStatus
+from constants.paths import NORMALIZATION_PATH
 from contenting.models import ContentTrack, ContentMusicItem, ContentList, ContentItem
 from contenting.reganam_tnetnoc.main import short_scripts
 from listening.models import Track, Artist, ReleaseTrack, Release, ReleaseArtists
 from utils import file
+from utils.string_utils import normalize_text
 from watching.models import Video
 
 
@@ -85,7 +87,7 @@ def find_similar_tracks():
 M = TypeVar("M", bound=models.Model)
 
 
-def clean_music():
+def delete_all_music():
     def delete_table_objects(table: type[M]) -> None:
         while True:
             pks: list = table.objects.values_list("pk", flat=True)[:7000]
@@ -162,10 +164,25 @@ def get_last_watched():
         print(item.id, item.name, item.rating, item.watched_date)
 
 
+def update_music_items():
+    def get_music_item_by_pk(pk: int) -> ContentMusicItem:
+        return ContentMusicItem.objects.get(pk=pk)
+
+    # item = get_music_item_by_pk(333399)
+    # item.title = "Tony Mahoney - Intro (NOTE: not the actual name of song)"
+    # item.save()
+
+
+def normalize_text_in_file():
+    data = file.read(NORMALIZATION_PATH, encoding=file.ENCODING_UTF8)
+    result_data = [normalize_text(line) for line in data]
+    file.write(NORMALIZATION_PATH, result_data, encoding=file.ENCODING_UTF8)
+
+
 class Command(BaseCommand):
     def handle(self, **options):
         pass
-        run_short_scripts()
+        normalize_text_in_file()
         # items = ContentMusicItem.objects.filter_by_content_list(57).order_by("position")
         # print(items.count())
         # for i, item in enumerate(items, start=1):

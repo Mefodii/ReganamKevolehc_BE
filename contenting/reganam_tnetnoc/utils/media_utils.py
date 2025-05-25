@@ -40,7 +40,9 @@ def sync_media_filenames_with_db(db_file: str, media_paths: list[str], extension
                 diff.append(f"Missing tag: {k}")
 
             if media_value != expected_value:
-                diff.append(f"Tag mismatch value. Tag: {k}. Expected: {expected_value}. Actual: {media_value}")
+                diff.append(f"Tag mismatch value. Tag: {k}.\n"
+                            f"Expected: {expected_value}\n"
+                            f"Actual:   {media_value}")
 
         changed = False
         if len(diff) > 0:
@@ -52,7 +54,8 @@ def sync_media_filenames_with_db(db_file: str, media_paths: list[str], extension
 
         if video.file_name != element.get_plain_name():
             new_name = f"{video.file_name}.{extension.value}"
-            print(f"Renaming: {element.get_plain_name()}. New name: {video.file_name}")
+            print(f"Renaming: {element.get_plain_name()}\n"
+                  f"New name: {video.file_name}")
             element.rename(new_name)
             changed = True
 

@@ -17,6 +17,8 @@ FILE_EXTENSION = "file_extension"
 VIDEO_QUALITY = "video_quality"
 PLAYLIST_FILE = "playlist_file"
 DOWNLOAD = "download"
+STATUS = "status"
+CATEGORY = "category"
 
 DUMMY_NAME = "dummy_name"
 
@@ -60,6 +62,9 @@ class YoutubeWatcher:
         self.api_videos: list[YoutubeAPIItem] = []
         self.db_videos: YoutubeVideoList = YoutubeVideoList.from_file(self.db_file, empty_if_not_found=True)
         self.new_check_date: str | None = None
+
+        self.category: str = ""
+        self.status: str = ""
 
     @classmethod
     def dummy(cls) -> Self:
@@ -105,9 +110,13 @@ class YoutubeWatcher:
         playlist_file = data.get(PLAYLIST_FILE)
         download = data.get(DOWNLOAD)
         video_quality = data.get(VIDEO_QUALITY, None)
+        status = data.get(STATUS, "")
+        category = data.get(CATEGORY, "")
 
         obj = YoutubeWatcher(name, channel_id, check_date, video_count, file_extension,
                              download, playlist_file, video_quality)
+        obj.status = status
+        obj.category = category
         return obj
 
     @classmethod
@@ -154,7 +163,9 @@ class YoutubeWatcher:
         json_data += f"\"{CHECK_DATE}\": \"{self.check_date}\", "
         json_data += f"\"{VIDEO_COUNT}\": {self.video_count}, "
         json_data += f"\"{FILE_EXTENSION}\": \"{self.file_extension.value}\", "
-        json_data += f"\"{DOWNLOAD}\": {str(self.download).lower()}"
+        json_data += f"\"{DOWNLOAD}\": \"{str(self.download).lower()}\", "
+        json_data += f"\"{STATUS}\": \"{self.status}\", "
+        json_data += f"\"{CATEGORY}\": \"{self.category}\""
         if self.video_quality:
             json_data += f", \"{VIDEO_QUALITY}\": {self.video_quality}"
         if self.playlist_file:

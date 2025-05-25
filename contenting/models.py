@@ -6,6 +6,7 @@ from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Q, QuerySet
 
+from constants.constants import TEST_OBJ_ANNOTATION
 from constants.enums import ContentCategory, DownloadStatus, ContentItemType, ContentWatcherSourceType, FileExtension, \
     ContentWatcherStatus, VideoQuality
 from contenting.queryset import ContentItemQuerySet, ContentMusicItemQuerySet, ContentListQuerySet, \
@@ -13,6 +14,7 @@ from contenting.queryset import ContentItemQuerySet, ContentMusicItemQuerySet, C
 from listening.models import Track
 from utils.datetime_utils import default_datetime
 from utils.model_utils import PositionedModel
+from utils.string_utils import normalize_file_name
 
 
 class ContentList(models.Model):
@@ -24,6 +26,7 @@ class ContentList(models.Model):
     category = models.CharField(max_length=50, choices=ContentCategory.as_choices())
     migration_position = models.IntegerField(validators=[MinValueValidator(0)])
 
+    # noinspection PyClassVar
     objects: ContentListQuerySet[ContentList] = ContentListQuerySet.as_manager()
 
     def is_music(self):
@@ -64,6 +67,10 @@ class ContentItemAbstract(PositionedModel):
     class Meta:
         abstract = True
 
+    @classmethod
+    def build_file_name(cls, position: int, watcher_name: str, title: str):
+        return normalize_file_name(" - ".join([str(position), watcher_name, title]))
+
 
 class ContentItem(ContentItemAbstract):
     parent_name = "content_list"
@@ -71,6 +78,7 @@ class ContentItem(ContentItemAbstract):
     consumed = models.BooleanField()
     content_list = models.ForeignKey(ContentList, related_name="content_items", on_delete=models.CASCADE)
 
+    # noinspection PyClassVar
     objects: ContentItemQuerySet[ContentItem] = ContentItemQuerySet.as_manager()
 
     def __str__(self):
@@ -86,6 +94,7 @@ class ContentMusicItem(ContentItemAbstract):
     comment = models.CharField(default="", max_length=200, blank=True, null=True)
     parsed = models.BooleanField(default=False)
 
+    # noinspection PyClassVar
     objects: ContentMusicItemQuerySet[ContentMusicItem] = ContentMusicItemQuerySet.as_manager()
 
     def is_consumed(self):
@@ -180,7 +189,11 @@ class ContentWatcher(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
 
+    # noinspection PyClassVar
     objects: ContentWatcherQuerySet[ContentWatcher] = ContentWatcherQuerySet.as_manager()
+
+    def is_test_object(self) -> bool:
+        return self.watcher_id.startswith(TEST_OBJ_ANNOTATION)
 
     def is_consumed(self):
         return self.content_list.is_consumed()

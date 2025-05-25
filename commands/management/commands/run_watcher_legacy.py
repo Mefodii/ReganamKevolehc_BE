@@ -7,8 +7,12 @@ from django.core.management.base import BaseCommand
 from constants.enums import ContentCategory, DownloadStatus, ContentWatcherSourceType, ContentWatcherStatus, \
     ContentItemType, VideoQuality, TrackStatus
 from constants.enums import FileExtension
+from constants.paths import LEGACY_WATCHERS_PATH, WATCHERS_DOWNLOAD_PATH, FILES_AUDIO_ARCHIVE_PATH, \
+    FILES_VIDEO_ARCHIVE_PATH
 from contenting.models import ContentWatcher, ContentItem, ContentList, ContentMusicItem, ContentTrack
 from contenting.reganam_tnetnoc.model.playlist_item import PlaylistItem, PlaylistItemList, PlaylistChildItem
+from contenting.reganam_tnetnoc.utils import media_utils
+from contenting.reganam_tnetnoc.utils.media_utils import sync_media_filenames_with_db
 from contenting.reganam_tnetnoc.watchers.youtube.media import YoutubeVideo
 from contenting.reganam_tnetnoc.watchers.youtube.watcher import YoutubeWatcher
 from contenting.serializers import ContentWatcherCreateSerializer, ContentListSerializer
@@ -16,6 +20,7 @@ from listening.models import Track, Artist, Release, ReleaseTrack, TrackArtists,
 from listening.queryset import ReleaseQuerySet, ReleaseTrackQuerySet, TrackQuerySet
 from utils import datetime_utils, file
 from utils.datetime_utils import utcnow
+from utils.file import File
 from utils.string_utils import normalize_text
 
 DOWNLOAD_STATUS_MAPPING: dict[str, DownloadStatus] = {
@@ -26,11 +31,16 @@ DOWNLOAD_STATUS_MAPPING: dict[str, DownloadStatus] = {
     YoutubeVideo.STATUS_SKIP: DownloadStatus.SKIP,
 }
 
+OTHER_PLAYLISTS = r"E:\Google Drive\Mu\plist\otherlists"
+MUSIC_ARTISTS = r"E:\Google Drive\Mu\plist\Artists"
+
 TRACK_SPLIT_FILE = r"E:\Tnetnoc\input\temp_track_split.json"
 track_split_data = file.read_json(TRACK_SPLIT_FILE)
 
 RELAX_N_LISTEN_LIST = "Relax'n'Listen (frozen)"
 current_imported_list: str | None = None
+
+OLD_WATCHERS_FILES: dict[str, File] = {f.get_plain_name(): f for f in file.list_files(LEGACY_WATCHERS_PATH)}
 
 
 def find_track_split_data(track_title: str) -> Tuple[list[str], str] | Tuple[None, None]:
@@ -156,23 +166,6 @@ def split_track(track_name: str) -> Tuple[list[str], str]:
         append_to_track_split(track_name, artists, title)
 
     return artists, title
-
-
-def blind_search(raw_title: str) -> Track | None:
-    try:
-        artists, title = split_track(raw_title)
-        artist_objects = []
-        for artist_name in artists:
-            artist_name = artist_name.strip()
-            artist = Artist.objects.get(name=artist_name)
-            artist_objects.append(artist)
-
-        tracks = Track.objects.filter_exact_artists(artist_objects).filter(title__iexact=title)
-        if len(tracks) == 1:
-            return tracks[0]
-        return None
-    except (Artist.DoesNotExist, ValueError):
-        return None
 
 
 def get_or_create_track(playlist_item: PlaylistItem | PlaylistChildItem, downloaded: bool, in_library: bool) -> Track:
@@ -465,7 +458,7 @@ def import_artist():
         t = item.title.strip()[23:].strip()
         return rt, t, yyyy
 
-    artist_files = file.list_files(r"E:\Google Drive\Mu\plist\Artists")
+    artist_files = file.list_files(MUSIC_ARTISTS)
     for f in artist_files:
         # if f.get_plain_name() != "Alternosfera":
         #     continue
@@ -524,13 +517,10 @@ def import_artist():
 
 
 def import_list():
-    other_files = file.list_files(r"E:\Google Drive\Mu\plist\otherlists")
+    other_files = file.list_files(OTHER_PLAYLISTS)
     for f in other_files:
         list_name = f.get_plain_name()
         file_path = f.get_abs_path()
-
-        if list_name != "Пропанк":
-            continue
 
         item_list = PlaylistItemList.from_file(file_path, is_watcher=False)
         dl_pos = item_list.downloaded_position
@@ -569,6 +559,30 @@ def import_chilledcat():
 
 
 def reassign_to_clean_tracks():
+    """
+    Try to reassign not clean tracks to clean tracks.
+
+    Do a basic split of the track title and search for the track in the DB.
+
+    :return:
+    """
+
+    def blind_search(raw_title: str) -> Track | None:
+        try:
+            artists, title = split_track(raw_title)
+            artist_objects = []
+            for artist_name in artists:
+                artist_name = artist_name.strip()
+                artist = Artist.objects.get(name=artist_name)
+                artist_objects.append(artist)
+
+            res = Track.objects.filter_exact_artists(artist_objects).filter(title__iexact=title)
+            if len(res) == 1:
+                return res[0]
+            return None
+        except (Artist.DoesNotExist, ValueError):
+            return None
+
     tracks: TrackQuerySet[Track] = Track.objects.filter(is_clean=False)
     for track in tracks:
         track: Track
@@ -578,6 +592,15 @@ def reassign_to_clean_tracks():
 
 
 def check_lib_similar_tracks():
+    """
+    Shallow check for the duplica tracks in the django DB.
+
+    The base is Relax'n'Listen (frozen).txt.
+    For each track in the list, check if there is a track with the same title (case-insensitive) in the DB.
+
+    Print found duplicates.
+    :return:
+    """
     file_path = r"E:\Google Drive\Mu\plist\otherlists\Relax'n'Listen (frozen).txt"
     list_name = RELAX_N_LISTEN_LIST
     item_list = PlaylistItemList.from_file(file_path, is_watcher=False)
@@ -611,9 +634,172 @@ def check_lib_similar_tracks():
                 print("------   " + str(track))
 
 
+def print_old_watchers():
+    """
+    Only 1 time use, to generate the old watchers files.
+    :return:
+    """
+    watchers = ContentWatcher.objects.get_active_audio()
+    for watcher in watchers:
+        if watcher.is_test_object():
+            continue
+
+        watcher: ContentWatcher
+        playlist_file = r"E:/Google Drive/Mu/plist/" + watcher.name + ".txt"
+        check_date = datetime_utils.py_to_yt(watcher.check_date)
+        old_watcher = YoutubeWatcher(watcher.name, watcher.watcher_id, check_date, watcher.get_items_count(),
+                                     FileExtension.from_str(watcher.file_extension), watcher.download,
+                                     playlist_file, watcher.video_quality)
+        old_watcher.status = watcher.status
+        old_watcher.category = watcher.category
+        old_watcher_json = old_watcher.to_json()
+        file_path = f"{LEGACY_WATCHERS_PATH}\\{watcher.name}.txt"
+        file.write(file_path, [old_watcher_json])
+
+        data = file.read_json(file_path)
+        file_watcher: YoutubeWatcher = YoutubeWatcher.from_dict(data)
+        file_watcher_json = file_watcher.to_json()
+        if file_watcher_json != old_watcher_json:
+            raise ValueError(f"Mismatch. File: {file_watcher_json}. Old: {old_watcher_json}")
+
+
+def sync_music_items_titles(watcher_name: str, content_item: ContentMusicItem, db_video: YoutubeVideo,
+                            playlist_item: PlaylistItem):
+    if content_item.item_id != db_video.video_id:
+        raise ValueError(f"Mismatch. Django: {content_item.item_id}. Old: {db_video.video_id}")
+    if playlist_item.url != content_item.url:
+        raise ValueError(f"Mismatch. Django: {content_item.url}. PL: {playlist_item.url}")
+
+    django_title = content_item.title
+    db_title = db_video.title
+    pl_title = playlist_item.title
+    django_file_name = content_item.file_name
+    db_file_name = db_video.file_name
+
+    django_normalized_title = normalize_text(django_title)
+    db_normalized_title = normalize_text(db_title)
+    pl_normalized_title = normalize_text(pl_title)
+    django_normalized_file_name = normalize_text(django_file_name)
+    db_normalized_file_name = normalize_text(db_file_name)
+
+    if django_normalized_title != db_normalized_title:
+        # db_video.title = django_normalized_title
+        raise ValueError(f"Title Mismatch.\n"
+                         f"Django: {django_normalized_title}\n"
+                         f"Old:    {db_normalized_title}\n")
+
+    if pl_title != pl_normalized_title:
+        raise ValueError(f"Title Mismatch.\n"
+                         f"PL Orig: {pl_title}\n"
+                         f"PL NOrm: {pl_normalized_title}\n")
+
+    if not playlist_item.is_clean() and django_normalized_title != pl_normalized_title:
+        playlist_item.title = django_normalized_title
+        print(f"Title Mismatch. ContentMusicItem ID: {content_item.id}\n"
+              f"Django: {django_normalized_title}\n"
+              f"PL:     {pl_normalized_title}\n")
+
+    if django_title != django_normalized_title:
+        print(f"Django Title Mismatch. \n"
+              f"Actual:     {django_title}\n"
+              f"Normalized: {django_normalized_title}\n")
+        # content_item.title = django_normalized_title
+        # content_item.save()
+
+    if db_title != db_normalized_title:
+        print(f"DB Title Mismatch. \n"
+              f"Actual:     {db_title}\n"
+              f"Normalized: {db_normalized_title}\n")
+        # db_video.title = django_normalized_title
+
+    if django_file_name != db_file_name:
+        raise ValueError(f"File name mismatch. \n"
+                         f"Django: {django_normalized_file_name}\n"
+                         f"Old:    {db_normalized_file_name}\n")
+
+    new_file_name = content_item.build_file_name(content_item.position, watcher_name, django_normalized_title)
+    if new_file_name != django_file_name:
+        print(f"Django file name mismatch. \n"
+              f"New: {new_file_name}\n"
+              f"Old: {django_file_name}\n")
+
+        # content_item.file_name = new_file_name
+        # content_item.save()
+        # db_video.file_name = new_file_name
+
+
+def sync_music_items_files(legacy_watcher: YoutubeWatcher):
+    media_paths = [
+        WATCHERS_DOWNLOAD_PATH + "\\" + legacy_watcher.name,
+        FILES_AUDIO_ARCHIVE_PATH + "\\" + legacy_watcher.name,
+        FILES_VIDEO_ARCHIVE_PATH + "\\" + legacy_watcher.name
+    ]
+    media_paths = list(filter(lambda p: file.dir_exists(p), media_paths))
+    sync_media_filenames_with_db(legacy_watcher.db_file, media_paths, legacy_watcher.file_extension)
+    media_utils.check_validity(legacy_watcher.db_file, media_paths)
+
+
+def sync_music_django_with_old_db():
+    watchers = ContentWatcher.objects.get_active_audio()
+    for watcher in watchers:
+        watcher: ContentWatcher
+        if watcher.is_test_object():
+            continue
+
+        if watcher.name == "UnderratedAlbums":
+            continue
+
+        print(">>>>>> ", watcher.name, " <<<<<<<")
+        legacy_watcher_file = OLD_WATCHERS_FILES.get(watcher.name, None)
+        if not legacy_watcher_file:
+            raise ValueError(f"No old watcher for: {watcher.name}")
+
+        data = file.read_json(legacy_watcher_file.get_abs_path())
+        legacy_watcher: YoutubeWatcher = YoutubeWatcher.from_dict(data)
+
+        if len(legacy_watcher.db_videos.videos) != watcher.get_items_count():
+            raise ValueError(f"Mismatch. Old: {len(legacy_watcher.db_videos.videos)}. "
+                             f"Django: {watcher.get_items_count()}")
+
+        content_items = ContentMusicItem.objects.filter_by_content_list(watcher.content_list.id).order_by("position")
+        if len(legacy_watcher.db_videos.videos) != len(content_items):
+            raise ValueError(f"Mismatch. Old: {len(legacy_watcher.db_videos.videos)}. "
+                             f"Django: {len(content_items)}")
+
+        playlist_items = legacy_watcher.playlist_items.items
+        pl_carry_index = 1 if playlist_items[0].is_dummy else 0
+        if len(playlist_items) - pl_carry_index != len(legacy_watcher.db_videos.videos):
+            raise ValueError(f"Mismatch. \n"
+                             f"Playlist: {len(legacy_watcher.playlist_items.items)}\n"
+                             f"DB:       {len(legacy_watcher.db_videos.videos)}")
+
+        for i in range(len(content_items)):
+            content_item: ContentMusicItem = content_items[i]
+            db_video: YoutubeVideo = legacy_watcher.db_videos.videos[i]
+            playlist_item: PlaylistItem = playlist_items[i + pl_carry_index]
+
+            sync_music_items_titles(watcher.name, content_item, db_video, playlist_item)
+
+        # sync_music_items_files(legacy_watcher)
+
+        # legacy_watcher.update_db()
+        # legacy_watcher.playlist_items.write(legacy_watcher.playlist_file)
+
+
+def find_music_anomalies():
+    # TODO: for watchers/list find tracks which are marked as duplicates but not found in the DB/playlist
+    # TODO: for watchers/list find tracks which are marked as liked and in library, but file not found.
+    pass
+
+
+def sync_legacy_music_with_django():
+    pass
+
+
 class Command(BaseCommand):
     def handle(self, **options):
         pass
+        sync_music_django_with_old_db()
         # check_lib_similar_tracks()
         # import_list()
         # import_watchers(paths.YOUTUBE_WATCHERS_PATH)

@@ -3,7 +3,6 @@ import time
 from django.core.management.base import BaseCommand
 
 from constants import paths
-from constants.constants import TEST_WATCHER_ID
 from contenting.models import ContentWatcher
 from contenting.queryset import ContentWatcherQuerySet
 from contenting.reganam_tnetnoc.watchers.youtube.api import YoutubeWorker
@@ -18,7 +17,7 @@ def run_imported_watchers():
     def run_updates(watchers: ContentWatcherQuerySet):
         for watcher in watchers:
             watcher: ContentWatcher
-            if watcher.watcher_id.startswith(TEST_WATCHER_ID):
+            if watcher.is_test_object():
                 continue
 
             # if watcher.watcher_id != "UCwipTluVS2mjuhPtx2WU7eQ":
